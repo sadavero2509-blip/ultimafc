@@ -1,0 +1,57 @@
+# Python build/compilation files
+__pycache__/
+*.py[cod]
+*$py.class
+*.spec
+
+# Virtual Environments
+venv/
+.venv/
+ENV/
+
+# OS/Editor configurations
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Ultimate Mode local databases & server databases
+ultimate_save.json
+server_data/
+
+# Game save files (except default config and credentials)
+saves/*
+!saves/config.json
+!saves/creds.json
+
+# PyInstaller / Build outputs
+build/
+dist/
+
+# Scratch & utility folders
+scratch/
+
+# Root-level utility/fix scripts
+_scan_apos.py
+add_coins.py
+add_english_rosters.py
+add_french_rosters.py
+add_german_teams.py
+add_portuguese_rosters.py
+check_*.py
+fix_*.py
+generate_*.py
+inject_*.py
+parody_names.py
+scratch_*.py
+update_*.py
+validate_*.py
+
+# Third-party platform binary files
+playit.exe
+
+# Backup files
+*.backup

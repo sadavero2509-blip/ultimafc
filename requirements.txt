@@ -1,0 +1,9 @@
+pygame-ce>=2.5.7
+numpy>=2.4.4
+flask>=3.0.0
+flask-cors>=4.0.0
+flask-socketio>=5.3.6
+python-dotenv>=1.0.0
+requests>=2.31.0
+python-socketio>=5.11.0
+websocket-client>=1.7.0
