@@ -533,6 +533,14 @@ class CareerHubScene:
                     pygame.draw.circle(surface, (255, 50, 50), badge_rect.center, badge_size // 2)
                     badge_txt = self.font_hint.render(str(tot), True, WHITE)
                     surface.blit(badge_txt, (badge_rect.centerx - badge_txt.get_width() // 2, badge_rect.centery - badge_txt.get_height() // 2))
+            elif item["id"] == "inbox":
+                unread_emails = sum(1 for mail in career_manager.inbox if not mail.get("read", False))
+                if unread_emails > 0:
+                    badge_size = 20
+                    badge_rect = pygame.Rect(tile_rect.right - 28, tile_rect.top + 8, badge_size, badge_size)
+                    pygame.draw.circle(surface, (255, 50, 50), badge_rect.center, badge_size // 2)
+                    badge_txt = self.font_hint.render(str(unread_emails), True, WHITE)
+                    surface.blit(badge_txt, (badge_rect.centerx - badge_txt.get_width() // 2, badge_rect.centery - badge_txt.get_height() // 2))
 
 
         # Status Message

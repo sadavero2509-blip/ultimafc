@@ -188,26 +188,28 @@ class CareerSocialScene:
                         elif event.key in (pygame.K_RIGHT, pygame.K_d, pygame.K_RETURN):
                             if dms:
                                 active_dm = dms[self.selected_dm_idx]
-                                if active_dm["status"] == "unread" and active_dm.get("choices"):
-                                    self.dm_focus = "chat"
-                                    self.selected_choice_idx = 0
+                                # Mark as read when opening the conversation
+                                if active_dm["status"] == "unread":
+                                    active_dm["status"] = "read"
+                                self.dm_focus = "chat"
+                                self.selected_choice_idx = 0
                     else:  # self.dm_focus == "chat"
                         if event.key in (pygame.K_UP, pygame.K_w):
                             if dms:
                                 active_dm = dms[self.selected_dm_idx]
-                                if active_dm["status"] == "unread" and active_dm.get("choices"):
+                                if active_dm["status"] in ("unread", "read") and active_dm.get("choices"):
                                     self.selected_choice_idx = (self.selected_choice_idx - 1) % len(active_dm["choices"])
                         elif event.key in (pygame.K_DOWN, pygame.K_s):
                             if dms:
                                 active_dm = dms[self.selected_dm_idx]
-                                if active_dm["status"] == "unread" and active_dm.get("choices"):
+                                if active_dm["status"] in ("unread", "read") and active_dm.get("choices"):
                                     self.selected_choice_idx = (self.selected_choice_idx + 1) % len(active_dm["choices"])
                         elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_ESCAPE):
                             self.dm_focus = "list"
                         elif event.key == pygame.K_RETURN:
                             if dms:
                                 active_dm = dms[self.selected_dm_idx]
-                                if active_dm["status"] == "unread" and active_dm.get("choices"):
+                                if active_dm["status"] in ("unread", "read") and active_dm.get("choices"):
                                     success = career_manager.reply_to_dm(active_dm["id"], self.selected_choice_idx)
                                     if success:
                                         self._set_msg("Respuesta enviada y consecuencias aplicadas.")
@@ -572,7 +574,7 @@ class CareerSocialScene:
         surface.blit(self.font_text.render(line, True, WHITE), (msg_bubble_rect.left + 20, m_y))
         
         # Choices panel (Bottom of chat) — vertical scrollable list
-        if active_dm["status"] == "unread":
+        if active_dm["status"] in ("unread", "read"):
             choices = active_dm["choices"]
             n_choices = len(choices)
             
@@ -640,9 +642,13 @@ class CareerSocialScene:
             done_icon = self.font_title.render("[OK]", True, (100, 255, 120))
             surface.blit(done_icon, (rep_rect.left + 25, rep_rect.centery - done_icon.get_height()//2))
             
-            sel_choice = active_dm["choices"][active_dm["reply_selected"]]
-            replied_txt = f"Respondido: \"{sel_choice['text']}\""
-            if len(replied_txt) > 42: replied_txt = replied_txt[:39] + "..."
+            reply_idx = active_dm.get("reply_selected")
+            if reply_idx is not None and reply_idx < len(active_dm.get("choices", [])):
+                sel_choice = active_dm["choices"][reply_idx]
+                replied_txt = f"Respondido: \"{sel_choice['text']}\""
+                if len(replied_txt) > 42: replied_txt = replied_txt[:39] + "..."
+            else:
+                replied_txt = "Conversación finalizada."
             
             r_s1 = self.font_bold.render("MENSAJE RESPONDIDO", True, (100, 255, 120))
             surface.blit(r_s1, (rep_rect.left + 90, rep_rect.top + 20))

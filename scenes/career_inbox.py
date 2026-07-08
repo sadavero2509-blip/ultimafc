@@ -39,6 +39,9 @@ class CareerInboxScene:
 
     def update(self, dt):
         self.time += dt
+        inbox = career_manager.inbox
+        if inbox and self.selected_idx < len(inbox):
+            inbox[self.selected_idx]["read"] = True
 
     def draw(self, surface):
         surface.fill((10, 15, 25))
@@ -140,5 +143,5 @@ class CareerInboxScene:
                     dy += 30
         
         # Hint
-        hint = self.font_hint.render("↑↓/WS Navegar Mensajes  ·  ENTER Marcar como leído  ·  ESC Volver", True, UI_TEXT_DIM)
+        hint = self.font_hint.render("↑↓/WS Navegar Mensajes  ·  ESC Volver", True, UI_TEXT_DIM)
         surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT - 40))

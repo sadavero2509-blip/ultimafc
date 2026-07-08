@@ -1168,7 +1168,7 @@ class CareerManager:
             return
 
         # Cooldown and anti-spam check: Collect handles that currently have unread DMs or were recent
-        unread_handles = {d["handle"] for d in sm["dms"] if d["status"] == "unread"}
+        unread_handles = {d["handle"] for d in sm["dms"] if d["status"] in ("unread", "read")}
         recent_handles = [d["handle"] for d in sm["dms"][:3]]
 
         # Pre-calculate context for weighted category selection
@@ -1680,7 +1680,7 @@ class CareerManager:
         
         # Evitar duplicar mensajes no leidos del mismo remitente
         if auto_replied_idx is None:
-            if any(d.get("handle") == handle and d.get("status") == "unread" for d in sm.get("dms", [])):
+            if any(d.get("handle") == handle and d.get("status") in ("unread", "read") for d in sm.get("dms", [])):
                 return
                 
         # Evitar repetir exactamente el mismo mensaje en la bandeja de entrada reciente
