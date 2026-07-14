@@ -305,29 +305,85 @@ class Goalkeeper:
                             (0, 0, radius * 3, radius))
         surface.blit(shadow_surf, (px - radius * 3 // 2, cy + radius - 3))
 
-        # Cuerpo (uniforme de portero - color diferente)
-        pygame.draw.circle(surface, self.color, (px, cy), radius)
+        # --- Procedural Humanoid Goalkeeper Model ---
+        num_val = self.player_data.get("num", 1)
+        skin_color = (253, 213, 185) if num_val % 4 != 0 else (120, 80, 55)
+        hair_color = [(45, 35, 30), (95, 65, 45), (210, 180, 100), (145, 90, 50), (25, 25, 25)][num_val % 5]
 
-        # Guantes (pequeños rectángulos a los lados)
-        glove_color = (255, 165, 0)  # Naranja para guantes
-        glove_w = 5
-        glove_h = 8
-        pygame.draw.rect(surface, glove_color,
-                         (px - radius - glove_w + 2, cy - glove_h // 2 - glove_raise, glove_w, glove_h))
-        pygame.draw.rect(surface, glove_color,
-                         (px + radius - 2, cy - glove_h // 2 - glove_raise, glove_w, glove_h))
+        # Base proportions
+        torso_w = int(radius * 1.35)
+        torso_h = int(radius * 1.05)
+        head_r = int(radius * 0.55)
+        
+        hx = px
+        hy = cy - int(radius * 0.85)
+        
+        # 1. Legs and Feet (GK stands in place mostly, slight bob)
+        lx = px - int(radius * 0.3)
+        rx = px + int(radius * 0.3)
+        ly = cy + int(radius * 0.4)
+        
+        # Left leg
+        pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + int(radius * 0.45)), 3)
+        pygame.draw.circle(surface, (30, 30, 30), (lx, ly + int(radius * 0.45)), 3)
+        # Right leg
+        pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + int(radius * 0.45)), 3)
+        pygame.draw.circle(surface, (30, 30, 30), (rx, ly + int(radius * 0.45)), 3)
+        
+        # 2. Torso (GK Jersey)
+        ty = cy - int(radius * 0.1)
+        pygame.draw.rect(surface, self.color, (px - torso_w//2, ty - torso_h//2, torso_w, torso_h), border_radius=3)
+        pygame.draw.rect(surface, BLACK, (px - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
+        
+        # 3. Shorts
+        shorts_y = ty + torso_h//2 - 1
+        shorts_h = int(radius * 0.4)
+        # Goalkeepers usually wear dark/accent shorts
+        pygame.draw.rect(surface, (30, 30, 35), (px - torso_w//2, shorts_y, torso_w, shorts_h), border_radius=1)
+        pygame.draw.rect(surface, BLACK, (px - torso_w//2, shorts_y, torso_w, shorts_h), 1, border_radius=1)
+        
+        # 4. Head & Hair
+        pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
+        pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
+        pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
+        
+        # 5. Arms & GK Gloves
+        glove_color = (255, 120, 0) # Bright orange gloves
+        lax = px - torso_w//2 - 1
+        lay = ty - torso_h//3
+        rax = px + torso_w//2 + 1
+        ray = ty - torso_h//3
+        
+        # Goalkeeper arms ready stance/raise gloves on pass/kick charge
+        left_arm_y = lay + int(radius * 0.3) - glove_raise
+        right_arm_y = ray + int(radius * 0.3) - glove_raise
+        
+        pygame.draw.line(surface, self.color, (lax, lay), (lax - 3, left_arm_y), 3)
+        pygame.draw.line(surface, self.color, (rax, ray), (rax + 3, right_arm_y), 3)
+        # Big gloves
+        pygame.draw.circle(surface, glove_color, (lax - 3, left_arm_y), 4)
+        pygame.draw.circle(surface, glove_color, (rax + 3, right_arm_y), 4)
+        pygame.draw.circle(surface, BLACK, (lax - 3, left_arm_y), 4, 1)
+        pygame.draw.circle(surface, BLACK, (rax + 3, right_arm_y), 4, 1)
 
-        # Borde
-        pygame.draw.circle(surface, BLACK, (px, cy), radius, 2)
-
-        # Ojos (blink) para gesto facial mínimo
+        # 6. Eyes
         blink = (math.sin(now * 4.0 + phase) + 1.0) / 2.0
         eye_open = 1.0 if blink > 0.15 else 0.15
-        eye_r = max(1, int(radius * 0.08))
-        ex_off = max(2, int(radius * 0.25))
-        ey = cy - int(radius * 0.05)
-        pygame.draw.circle(surface, BLACK, (px - ex_off, ey), max(1, int(eye_r * eye_open)))
-        pygame.draw.circle(surface, BLACK, (px + ex_off, ey), max(1, int(eye_r * eye_open)))
+        eye_r = max(1, int(head_r * 0.18))
+        
+        # Goalkeeper faces forward/where ball is (facing side/forward)
+        gk_aim = pygame.math.Vector2(1 if self.side == "left" else -1, 0)
+        ex = hx + int(gk_aim.x * head_r * 0.3)
+        ey = hy + int(gk_aim.y * head_r * 0.3)
+        
+        perp = pygame.math.Vector2(-gk_aim.y, gk_aim.x)
+        e1x = ex - int(perp.x * head_r * 0.3)
+        e1y = ey - int(perp.y * head_r * 0.3)
+        e2x = ex + int(perp.x * head_r * 0.3)
+        e2y = ey + int(perp.y * head_r * 0.3)
+        
+        pygame.draw.circle(surface, BLACK, (int(e1x), int(e1y)), max(1, int(eye_r * eye_open)))
+        pygame.draw.circle(surface, BLACK, (int(e2x), int(e2y)), max(1, int(eye_r * eye_open)))
 
         # Indicador de jugador controlado
         if self.is_controlled:
