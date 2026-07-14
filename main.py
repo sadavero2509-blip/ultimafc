@@ -56,18 +56,18 @@ def run_game(screen):
                             print(f"Error cargando club tras auto-login: {e}")
             except: pass
             
-        initial_scene = MainMenuScene if logged_in else LoginScene
+        initial_scene = LoadingScene
         if not logged_in:
             # Si no hay login, igual conectamos un usuario temporal por si acaso,
             # pero la escena de Login sobreescribirá esto.
             network.connect(f"Guest_{int(time.time()) % 1000}")
     except Exception as e:
         print(f"Modo Offline/Remoto: {e}")
-        from scenes.main_menu import MainMenuScene
-        initial_scene = MainMenuScene
+        initial_scene = LoadingScene
+        logged_in = False
 
     scene_manager = SceneManager(screen)
-    scene_manager.set_scene(initial_scene)
+    scene_manager.set_scene(initial_scene, context={"logged_in": logged_in})
 
     mouse_timer = 2.0
     mouse_visible = True

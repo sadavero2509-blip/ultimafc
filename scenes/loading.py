@@ -6,8 +6,9 @@ from systems.updater import Updater
 from .main_menu import MenuScene, BaseScene
 
 class LoadingScene(MenuScene):
-    def __init__(self, manager):
+    def __init__(self, manager, context=None):
         super().__init__(manager)
+        self.context = context or {}
         self.start_time = time.time()
         self.timeout = 5.0 # Segundos antes de rendirse con el servidor
         self.status = "Iniciando sistemas..."
@@ -174,5 +175,9 @@ class LoadingScene(MenuScene):
                 return
 
             if event.key == pygame.K_RETURN and self.can_continue:
-                from .main_menu import MainMenuScene
-                self.manager.transition_to(MainMenuScene)
+                if self.context.get("logged_in"):
+                    from .main_menu import MainMenuScene
+                    self.manager.transition_to(MainMenuScene)
+                else:
+                    from scenes.login import LoginScene
+                    self.manager.transition_to(LoginScene)
