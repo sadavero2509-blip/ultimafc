@@ -4,7 +4,7 @@ from data.rosters import calculate_ovr
 
 # Configuración del Evento
 EVENT_START_DATE = datetime.datetime(2026, 6, 11, 12, 0) # 11 de Junio, 12:00 ET
-EVENT_END_DATE = datetime.datetime(2026, 7, 12, 23, 59)
+EVENT_END_DATE = datetime.datetime(2026, 7, 19, 23, 59)
 
 def is_event_active():
     """Verifica si el evento del Mundial está activo según la fecha actual."""
