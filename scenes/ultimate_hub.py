@@ -2226,6 +2226,43 @@ class UltimateHubScene:
                         threading.Thread(target=ultimate_manager.load_ultimate, daemon=True).start()
                     continue
 
+                # --- ESTADO DE ELECCIÓN DE PICK (MODAL GLOBAL) ---
+                if hasattr(self, "active_pick") and self.active_pick:
+                    pick = self.active_pick
+                    if event.key == pygame.K_LEFT: 
+                        self.selected_idx = max(0, self.selected_idx - 1)
+                    elif event.key == pygame.K_RIGHT: 
+                        self.selected_idx = min(len(pick["options"]) - 1, self.selected_idx + 1)
+                    elif event.key == pygame.K_RETURN:
+                        # Confirmar selección
+                        p_idx = self.pending_pick_idx if hasattr(self, "pending_pick_idx") else 0
+                        chosen = ultimate_manager.select_pick_player(p_idx, self.selected_idx)
+                        if chosen:
+                            self.msg = f"¡{chosen['name']} seleccionado!"
+                            self.msg_timer = 3.0
+                            self.active_pick = None
+                            self.pack_reveal_items = ultimate_manager.pending_items
+                            self.reveal_idx = 0
+                            self.reveal_timer = 0
+                        self.selected_idx = 0
+                    continue
+
+                # --- TECLA P PARA ABRIR PICKS O ARTÍCULOS PENDIENTES ---
+                if event.key == pygame.K_p:
+                    in_market_results = (self.tab == "MARKET" and hasattr(self, "market_tab") and self.market_tab == "RESULTS" and hasattr(self, "market_results") and self.market_results)
+                    if not in_market_results:
+                        if ultimate_manager.pending_picks:
+                            self.active_pick = ultimate_manager.pending_picks[0]
+                            self.pending_pick_idx = 0
+                            self.selected_idx = 0
+                            continue
+                        elif ultimate_manager.pending_items:
+                            self.pack_reveal_items = ultimate_manager.pending_items
+                            self.reveal_idx = 0
+                            self.reveal_timer = 0
+                            self.walkout_state = 0
+                            continue
+
                 if event.key == pygame.K_q or event.key == pygame.K_e:
                     # Cerrar modos secundarios al cambiar de pestaña
                     self.listing_mode = False
@@ -2306,6 +2343,20 @@ class UltimateHubScene:
                             if getattr(self, "listing_source", None) == "PACK":
                                 item = self.pack_reveal_items[self.reveal_idx]
                                 if ultimate_manager.list_direct_item_on_market(item["data"], self.list_bid, self.list_buy):
+                                    # Calcular v_idx para mantener la posición visual
+                                    club_names = [p["name"] for p in ultimate_manager.club_items.get("players", [])]
+                                    def _is_dup(it):
+                                        if it["type"] != "player": return False
+                                        return club_names.count(it["data"]["name"]) >= 1
+                                    non_dups = sorted([it for it in self.pack_reveal_items if not _is_dup(it)], key=lambda it: it["data"].get("ovr", 0) if it["type"] == "player" else 10, reverse=True)
+                                    dups = sorted([it for it in self.pack_reveal_items if _is_dup(it)], key=lambda it: it["data"].get("ovr", 0) if it["type"] == "player" else 10, reverse=True)
+                                    temp_sorted = non_dups + dups
+                                    temp_order = [self.pack_reveal_items.index(it) for it in temp_sorted]
+                                    try:
+                                        v_idx = temp_order.index(self.reveal_idx)
+                                    except:
+                                        v_idx = 0
+
                                     self.pack_reveal_items.pop(self.reveal_idx)
                                     self.listing_mode = False
                                     self.listing_source = None
@@ -2316,7 +2367,12 @@ class UltimateHubScene:
                                         self.pack_reveal_items = None
                                         ultimate_manager.pending_items = []
                                     else: 
-                                        self.reveal_idx = min(self.reveal_idx, len(self.pack_reveal_items)-1)
+                                        non_dups = sorted([it for it in self.pack_reveal_items if not _is_dup(it)], key=lambda it: it["data"].get("ovr", 0) if it["type"] == "player" else 10, reverse=True)
+                                        dups = sorted([it for it in self.pack_reveal_items if _is_dup(it)], key=lambda it: it["data"].get("ovr", 0) if it["type"] == "player" else 10, reverse=True)
+                                        temp_sorted = non_dups + dups
+                                        temp_order = [self.pack_reveal_items.index(it) for it in temp_sorted]
+                                        next_v_idx = min(v_idx, len(temp_order) - 1)
+                                        self.reveal_idx = temp_order[next_v_idx]
                                         ultimate_manager.pending_items = self.pack_reveal_items
                                     ultimate_manager.save_ultimate()
                                 else:
@@ -2969,26 +3025,6 @@ class UltimateHubScene:
                         self.manager.transition_to(SBCScene, group=group)
 
                 elif self.tab == "STORE":
-                    # --- ESTADO DE ELECCIÓN DE PICK ---
-                    if hasattr(self, "active_pick") and self.active_pick:
-                        pick = self.active_pick
-                        if event.key == pygame.K_LEFT: self.selected_idx = max(0, self.selected_idx - 1)
-                        elif event.key == pygame.K_RIGHT: self.selected_idx = min(len(pick["options"]) - 1, self.selected_idx + 1)
-                        elif event.key == pygame.K_RETURN:
-                            # Confirmar selección
-                            p_idx = self.pending_pick_idx if hasattr(self, "pending_pick_idx") else 0
-                            chosen = ultimate_manager.select_pick_player(p_idx, self.selected_idx)
-                            if chosen:
-                                self.msg = f"¡{chosen['name']} seleccionado!"
-                                self.msg_timer = 3.0
-                                self.active_pick = None
-                                # Ir a gestionar artículos para ver la nueva carta
-                                self.pack_reveal_items = ultimate_manager.pending_items
-                                self.reveal_idx = 0
-                                self.reveal_timer = 0
-                            self.selected_idx = 0
-                        continue
-
                     if self.pack_reveal_items:
                         # ... (Mantenemos la lógica de revelación existente)
                         if hasattr(self, "walkout_state") and self.walkout_state > 0:
@@ -3018,25 +3054,34 @@ class UltimateHubScene:
                             self.reveal_idx = visual_order[0]
                             
                         if event.key == pygame.K_LEFT: 
-                            v_idx = (v_idx - 1) % len(visual_order)
-                            self.reveal_idx = visual_order[v_idx]
+                            if v_idx > 0:
+                                v_idx -= 1
+                                self.reveal_idx = visual_order[v_idx]
                         elif event.key == pygame.K_RIGHT: 
-                            v_idx = (v_idx + 1) % len(visual_order)
-                            self.reveal_idx = visual_order[v_idx]
+                            if v_idx < len(visual_order) - 1:
+                                v_idx += 1
+                                self.reveal_idx = visual_order[v_idx]
                         elif event.key == pygame.K_UP: 
-                            v_idx = (v_idx - 6) % len(visual_order)
-                            self.reveal_idx = visual_order[v_idx]
                             row = v_idx // 6
-                            if row * 260 < self.reveal_scroll:
-                                self.reveal_scroll = row * 260
+                            col = v_idx % 6
+                            if row > 0:
+                                next_v_idx = (row - 1) * 6 + col
+                                self.reveal_idx = visual_order[next_v_idx]
+                                if (row - 1) * 260 < self.reveal_scroll:
+                                    self.reveal_scroll = (row - 1) * 260
                         elif event.key == pygame.K_DOWN: 
-                            v_idx = (v_idx + 6) % len(visual_order)
-                            self.reveal_idx = visual_order[v_idx]
                             row = v_idx // 6
-                            if (row + 1) * 260 > self.reveal_scroll + 500: # 500 is roughly the visible area height
-                                self.reveal_scroll = (row + 1) * 260 - 500
+                            col = v_idx % 6
+                            max_row = (len(visual_order) - 1) // 6
+                            if row < max_row:
+                                next_v_idx = min(len(visual_order) - 1, (row + 1) * 6 + col)
+                                self.reveal_idx = visual_order[next_v_idx]
+                                next_row = next_v_idx // 6
+                                if (next_row + 1) * 260 > self.reveal_scroll + 500:
+                                    self.reveal_scroll = (next_row + 1) * 260 - 500
                         
                         elif event.key == pygame.K_s: # Guardar individual
+                            v_idx = visual_order.index(self.reveal_idx)
                             item = self.pack_reveal_items.pop(self.reveal_idx)
                             if item["type"] == "player": ultimate_manager.club_items["players"].append(item["data"])
                             elif item["type"] == "badge": ultimate_manager.club_items["badges"].append(item["data"])
@@ -3049,7 +3094,12 @@ class UltimateHubScene:
                                 self.pack_reveal_items = None
                                 ultimate_manager.pending_items = []
                             else: 
-                                self.reveal_idx = min(self.reveal_idx, len(self.pack_reveal_items)-1)
+                                non_dups = sorted([it for it in self.pack_reveal_items if not _is_dup(it)], key=lambda it: it["data"].get("ovr", 0) if it["type"] == "player" else 10, reverse=True)
+                                dups = sorted([it for it in self.pack_reveal_items if _is_dup(it)], key=lambda it: it["data"].get("ovr", 0) if it["type"] == "player" else 10, reverse=True)
+                                temp_sorted = non_dups + dups
+                                temp_order = [self.pack_reveal_items.index(it) for it in temp_sorted]
+                                next_v_idx = min(v_idx, len(temp_order) - 1)
+                                self.reveal_idx = temp_order[next_v_idx]
                             ultimate_manager.save_ultimate()
                             
                         elif event.key == pygame.K_l: # Listar directo en mercado
@@ -3066,6 +3116,7 @@ class UltimateHubScene:
                                 self.msg_timer = 2.0
                                 
                         elif event.key == pygame.K_x: # Venta rápida individual
+                            v_idx = visual_order.index(self.reveal_idx)
                             item = self.pack_reveal_items.pop(self.reveal_idx)
                             value = 20 if item["type"] != "player" else ultimate_manager.get_quick_sell_value(item["data"])
                             ultimate_manager.coins += value
@@ -3075,7 +3126,12 @@ class UltimateHubScene:
                                 self.pack_reveal_items = None
                                 ultimate_manager.pending_items = []
                             else: 
-                                self.reveal_idx = min(self.reveal_idx, len(self.pack_reveal_items)-1)
+                                non_dups = sorted([it for it in self.pack_reveal_items if not _is_dup(it)], key=lambda it: it["data"].get("ovr", 0) if it["type"] == "player" else 10, reverse=True)
+                                dups = sorted([it for it in self.pack_reveal_items if _is_dup(it)], key=lambda it: it["data"].get("ovr", 0) if it["type"] == "player" else 10, reverse=True)
+                                temp_sorted = non_dups + dups
+                                temp_order = [self.pack_reveal_items.index(it) for it in temp_sorted]
+                                next_v_idx = min(v_idx, len(temp_order) - 1)
+                                self.reveal_idx = temp_order[next_v_idx]
                                 ultimate_manager.pending_items = self.pack_reveal_items
                             ultimate_manager.save_ultimate()
                             
@@ -3093,20 +3149,6 @@ class UltimateHubScene:
                         
                         elif event.key == pygame.K_ESCAPE:
                             self.pack_reveal_items = None
-                        continue
-                        
-                    if event.key == pygame.K_p:
-                        # Prioridad 1: Abrir picks pendientes
-                        if ultimate_manager.pending_picks:
-                            self.active_pick = ultimate_manager.pending_picks[0]
-                            self.pending_pick_idx = 0
-                            self.selected_idx = 0
-                        # Prioridad 2: Gestionar artículos de sobre
-                        elif ultimate_manager.pending_items:
-                            self.pack_reveal_items = ultimate_manager.pending_items
-                            self.reveal_idx = 0
-                            self.reveal_timer = 0
-                            self.walkout_state = 0
                         continue
 
                     if self.store_cat == "MIS SOBRES":

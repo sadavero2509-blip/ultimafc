@@ -51,7 +51,7 @@ NATIONAL_TEAMS = [
         "league_pool": "AR",
         # Jugadores paródicos de relleno (agentes libres inspirados en reales)
         "free_agents": [
-            {"name": "Lioneleh Messse", "pos": "RW", "ovr": 90, "age": 37},
+            {"name": "Lio Messy", "pos": "RW", "ovr": 90, "age": 37},
             {"name": "J. Altamirezze", "pos": "ST", "ovr": 85, "age": 27},
             {"name": "A. DaMirca", "pos": "CM", "ovr": 84, "age": 31},
             {"name": "E. Martinette", "pos": "GK", "ovr": 86, "age": 31},
@@ -173,7 +173,7 @@ NATIONAL_TEAMS = [
         "target_ovr": 87,
         "league_pool": "FR",
         "free_agents": [
-            {"name": "Kylian Mbapppe", "pos": "ST", "ovr": 91, "age": 25},
+            {"name": "Kylian Mbappeh", "pos": "ST", "ovr": 91, "age": 25},
             {"name": "A. Griezmenne", "pos": "CAM", "ovr": 84, "age": 33},
             {"name": "O. Demvelle", "pos": "RW", "ovr": 85, "age": 27},
             {"name": "M. Llórris", "pos": "GK", "ovr": 82, "age": 37},
@@ -266,7 +266,7 @@ NATIONAL_TEAMS = [
         "target_ovr": 85,
         "league_pool": "PT",
         "free_agents": [
-            {"name": "Cristiano Ronaldi", "pos": "ST", "ovr": 86, "age": 39},
+            {"name": "Cristian Ronaldoo", "pos": "ST", "ovr": 86, "age": 39},
             {"name": "B. Fernandez", "pos": "CAM", "ovr": 87, "age": 29},
             {"name": "R. Loaez", "pos": "LW", "ovr": 86, "age": 25},
             {"name": "R. Diazh", "pos": "CB", "ovr": 88, "age": 27},
@@ -350,7 +350,7 @@ NATIONAL_TEAMS = [
         "target_ovr": 82,
         "league_pool": "HR",
         "free_agents": [
-            {"name": "L. Modriczi", "pos": "CM", "ovr": 86, "age": 38},
+            {"name": "L. Modrichz", "pos": "CM", "ovr": 86, "age": 38},
             {"name": "J. Gvardiollo", "pos": "CB", "ovr": 84, "age": 22},
             {"name": "M. Kovacicih", "pos": "CM", "ovr": 83, "age": 30},
             {"name": "I. Perisicca", "pos": "LW", "ovr": 80, "age": 35},
@@ -527,7 +527,7 @@ NATIONAL_TEAMS = [
         "target_ovr": 79,
         "league_pool": "NO",
         "free_agents": [
-            {"name": "E. Haalandzon", "pos": "ST", "ovr": 91, "age": 24},
+            {"name": "E. Halandson", "pos": "ST", "ovr": 91, "age": 24},
             {"name": "M. Odegaardah", "pos": "CAM", "ovr": 89, "age": 25},
             {"name": "A. Sorloth", "pos": "ST", "ovr": 82, "age": 28},
             {"name": "O. Ostigardeh", "pos": "CB", "ovr": 77, "age": 24},

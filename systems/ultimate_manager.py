@@ -1387,9 +1387,10 @@ class UltimateManager:
             return {"status": "pack", "items": self._generate_pack_items(item)}
         elif item["type"] == "PICK":
             opts = self._generate_pick_options(item)
-            self.pending_picks.append({"id": item["id"], "name": item["name"], "options": opts})
+            pick_obj = {"id": item["id"], "name": item["name"], "options": opts}
+            self.pending_picks.append(pick_obj)
             self.save_ultimate()
-            return {"status": "pick", "options": opts}
+            return {"status": "pick", "pick": pick_obj}
         elif item["type"] in ["BADGE", "KIT", "PLAYER"]:
             # Añadir directamente al club
             cat = "badges" if item["type"] == "BADGE" else ("kits" if item["type"] == "KIT" else "players")
