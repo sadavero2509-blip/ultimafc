@@ -3089,6 +3089,8 @@ class UltimateHubScene:
                             elif item["type"] == "consumable": ultimate_manager.club_items["consumables"].append(item["data"])
                             self.msg = "Guardado en Club"
                             self.msg_timer = 1.0
+                            from systems.audio_manager import audio_manager
+                            audio_manager.play_ui("success")
                             ultimate_manager.pending_items = self.pack_reveal_items
                             if not self.pack_reveal_items: 
                                 self.pack_reveal_items = None
@@ -3120,6 +3122,8 @@ class UltimateHubScene:
                             item = self.pack_reveal_items.pop(self.reveal_idx)
                             value = 20 if item["type"] != "player" else ultimate_manager.get_quick_sell_value(item["data"])
                             ultimate_manager.coins += value
+                            from systems.audio_manager import audio_manager
+                            audio_manager.play_ui("coin_spend")
                             self.msg = f"Vendido por $ {value}"
                             self.msg_timer = 1.0
                             if not self.pack_reveal_items: 
@@ -3175,6 +3179,8 @@ class UltimateHubScene:
                             if self.store_cat == "MIS SOBRES":
                                 res_items = ultimate_manager.open_pending_pack(self.selected_idx)
                                 if res_items:
+                                    from systems.audio_manager import audio_manager
+                                    audio_manager.play_ui("pack_open")
                                     self.pack_reveal_items = res_items
                                     self.reveal_idx = 0; self.reveal_timer = 0
                                     # Walkout check: animacion solo si es panel o caminante (83+ OVR)
@@ -3192,9 +3198,13 @@ class UltimateHubScene:
 
                             # Lógica de compra normal
                             if ultimate_manager.coins >= pack["price"]:
+                                from systems.audio_manager import audio_manager
+                                audio_manager.play_ui("coin_spend")
                                 res = ultimate_manager.buy_item(pack["id"], currency="COINS")
                                 
                                 if res["status"] == "pack":
+                                    from systems.audio_manager import audio_manager
+                                    audio_manager.play_ui("pack_open")
                                     self.pack_reveal_items = res["items"]
                                     self.reveal_idx = 0; self.reveal_timer = 0
                                     # Walkout check: animacion solo si es panel o caminante (83+ OVR)
@@ -3218,6 +3228,8 @@ class UltimateHubScene:
                                     self.msg = res["msg"]
                                     self.msg_timer = 2.0
                             else:
+                                from systems.audio_manager import audio_manager
+                                audio_manager.play_ui("error")
                                 self.msg = "Monedas insuficientes"
                                 self.msg_timer = 2.0
 

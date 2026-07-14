@@ -70,6 +70,22 @@ class Ball:
         if self.vel.length() < 3 and self.z <= 0:
             self.vel = pygame.math.Vector2(0, 0)
 
+        # ── Detección de colisión con los postes ──
+        left_post1 = pygame.math.Vector2(pitch_rect.left, left_goal_rect.top)
+        left_post2 = pygame.math.Vector2(pitch_rect.left, left_goal_rect.bottom)
+        right_post1 = pygame.math.Vector2(pitch_rect.right, right_goal_rect.top)
+        right_post2 = pygame.math.Vector2(pitch_rect.right, right_goal_rect.bottom)
+        
+        for post in [left_post1, left_post2, right_post1, right_post2]:
+            if self.pos.distance_to(post) < self.radius + 3:
+                # Calcular vector de rebote
+                normal = (self.pos - post).normalize() if self.pos.distance_to(post) > 0 else pygame.math.Vector2(1, 0)
+                self.vel = self.vel.reflect(normal) * 0.6
+                self.pos = post + normal * (self.radius + 4)
+                from systems.audio_manager import audio_manager
+                audio_manager.play_post_hit()
+                break
+
         # ── Detección de gol (anti-tunneling) ──
         if self.pos.x < pitch_rect.left and left_goal_rect.top <= self.pos.y <= left_goal_rect.bottom:
             return "right"

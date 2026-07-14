@@ -354,6 +354,8 @@ class FieldPlayer:
             if input_manager.is_action_pressed("TACKLE") and self.kick_cooldown <= 0:
                 self.tackle_timer = TACKLE_DURATION
                 self.kick_cooldown = 1.0
+                from systems.audio_manager import audio_manager
+                audio_manager.play_tackle()
             
             # PRESIÓN / JOCKEY (PASS Button)
             if input_manager.is_action_pressed("PASS"):
@@ -396,6 +398,8 @@ class FieldPlayer:
                 # Velocidad del pase escalada por la carga (mínimo 300, máximo 750)
                 pass_speed = PASS_FORCE * (0.6 + self.pass_charge * 0.7)
                 ball.vel = pass_dir * pass_speed
+                from systems.audio_manager import audio_manager
+                audio_manager.play_pass()
                 
                 ball.target_player = target
                 ball.owner = None
@@ -442,6 +446,8 @@ class FieldPlayer:
                     adapted_speed = min(850, 420 + dist_to_space * 0.8)
                     
                     ball.vel = final_dir * adapted_speed
+                    from systems.audio_manager import audio_manager
+                    audio_manager.play_kick()
                     ball.target_player = None  # Al espacio
                     ball.is_through_pass = True  # Marcar que es pase al hueco
                     ball.owner = None
@@ -456,6 +462,8 @@ class FieldPlayer:
                     # Si no hay target claro, mandar al espacio en la dirección que apunta
                     pass_dir = self.direction
                     ball.vel = pass_dir * (PASS_FORCE * 1.1)
+                    from systems.audio_manager import audio_manager
+                    audio_manager.play_kick()
                     ball.target_player = None
                     ball.is_through_pass = True
                     ball.owner = None
@@ -509,6 +517,8 @@ class FieldPlayer:
                     # Potencia de tiro (escalada por carga y stat de tiro)
                     shot_stat_mult = 0.8 + (self.player_data["s"]["shot"] / 100.0) * 0.4 # 0.8 a 1.2
                     ball.vel = kick_dir * (KICK_FORCE * (0.8 + self.kick_charge * 0.9) * shot_stat_mult)
+                    from systems.audio_manager import audio_manager
+                    audio_manager.play_kick()
                     
                     ball.target_player = None
                     ball.owner = None
@@ -546,6 +556,8 @@ class FieldPlayer:
                 # Velocidad y ARCO (vz)
                 # Un centro debe ser lento pero alto para permitir el cabezazo
                 ball.vel = pass_dir * min(650, 350 + dist * 0.5)
+                from systems.audio_manager import audio_manager
+                audio_manager.play_kick()
                 # El impulso vertical (vz) depende de la distancia para que caiga en el sitio
                 ball.vz = 450 + (dist * 0.25) 
                 

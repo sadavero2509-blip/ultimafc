@@ -49,6 +49,10 @@ class PreMatchPresentationScene(BaseScene):
         # ── Slide animation ──
         self.slide_progress = 0.0
 
+        # ── Audio: stadium ambience ──
+        from systems.audio_manager import audio_manager
+        audio_manager.play_stadium_ambience()
+
         # ── Fonts ──
         try:
             self.font_comp = pygame.font.SysFont("Impact", 26)
@@ -173,6 +177,8 @@ class PreMatchPresentationScene(BaseScene):
                     self._advance_stage()
 
     def _advance_stage(self):
+        from systems.audio_manager import audio_manager
+        audio_manager.play_ui("transition")
         if self.stage < self.NUM_STAGES - 1:
             self.stage += 1
             self.stage_time = 0.0
@@ -184,6 +190,8 @@ class PreMatchPresentationScene(BaseScene):
         if self.finished:
             return
         self.finished = True
+        from systems.audio_manager import audio_manager
+        audio_manager.stop_stadium_ambience()
         from scenes.match import MatchScene
         self.manager.transition_to(MatchScene)
 

@@ -113,6 +113,8 @@ class Goalkeeper:
                         ball.vel.x *= -0.4
                         ball.vel.y += random.uniform(-100, 100)
                         self.kick_cooldown = 0.5 # No re-atrapar de inmediato
+                        from systems.audio_manager import audio_manager
+                        audio_manager.play_save()
                         return
                     
                     # SI EL TIRO ES MEDIO: Probabilidad de atrapar
@@ -120,6 +122,8 @@ class Goalkeeper:
                         if dist_to_ball < catch_radius:
                             self.match_stats["saves"] += 1
                             self.has_ball = True
+                            from systems.audio_manager import audio_manager
+                            audio_manager.play_save(0.5)
                     # TIRO FLOJO: Atrape fácil
                     else:
                         if dist_to_ball < catch_radius + 5:
@@ -156,6 +160,8 @@ class Goalkeeper:
                     if kick_dir.length() > 0:
                         kick_dir = kick_dir.normalize()
                     ball.vel = kick_dir * (self.kick_charge)
+                    from systems.audio_manager import audio_manager
+                    audio_manager.play_kick()
                     self.kick_cooldown = 1.0
                     self.kick_charge = 0
                     self.has_ball = False
@@ -230,6 +236,8 @@ class Goalkeeper:
 
     def _execute_pass(self, ball, force, teammates, pitch_rect):
         """Asistente de pase para portero."""
+        from systems.audio_manager import audio_manager
+        audio_manager.play_pass()
         if teammates:
             # Buscar el compañero más desmarcado/cercano adelante
             target = None

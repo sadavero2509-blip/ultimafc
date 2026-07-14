@@ -639,6 +639,14 @@ class MatchScene(BaseScene):
                     self.is_kickoff = False
             else:
                 self.hud.update(dt)
+            
+            # Tension music in the last 5 minutes of match
+            game_min = int(self.hud.match_time * (90 / self.hud.match_duration))
+            if game_min >= 85 and not getattr(self, "_tension_music_playing", False) and not self.hud.is_match_over():
+                self._tension_music_playing = True
+                from systems.audio_manager import audio_manager
+                audio_manager.play_match_tension()
+                
             if getattr(self, 'switch_cooldown', 0) > 0: self.switch_cooldown -= dt
             if is_sp:
                 our_all = self.left_all if self.left_team == self.user_team else self.right_all
@@ -684,6 +692,8 @@ class MatchScene(BaseScene):
         self.ball.vel *= 0.1 # Frenar el balón
         self.out_of_bounds_timer = 2.5
         self.out_of_bounds_msg = f"¡FALTA DE {player.player_data['name'].upper()}!"
+        from systems.audio_manager import audio_manager
+        audio_manager.play_foul_whistle()
         
         # 1. Determinar tarjeta (probabilidades realistas)
         card = None
@@ -696,6 +706,8 @@ class MatchScene(BaseScene):
             player.yellow_cards += 1
             player.match_stats["yellow_cards"] += 1
             self.out_of_bounds_msg += " [AMARILLA]"
+            from systems.audio_manager import audio_manager
+            audio_manager.play_card("yellow")
             if player.yellow_cards >= 2:
                 card = "RED" # Doble amarilla
                 
@@ -703,6 +715,8 @@ class MatchScene(BaseScene):
             player.red_card = True
             player.match_stats["red_card"] = 1
             self.out_of_bounds_msg += " [ROJA] EXPULSADO"
+            from systems.audio_manager import audio_manager
+            audio_manager.play_card("red")
             
         # 2. Determinar lesión del receptor (3% de probabilidad)
         if random.random() < 0.03:
@@ -723,6 +737,8 @@ class MatchScene(BaseScene):
         """Aplica un estado de lesión al jugador."""
         player.is_injured = True
         player.injury_severity = int(intensity * 100)
+        from systems.audio_manager import audio_manager
+        audio_manager.play_crowd_reaction("boo")
         
         msg = f"¡{player.player_data['name'].upper()} SE HA LESIONADO!"
         if player.injury_severity > 70:
@@ -1121,6 +1137,8 @@ class MatchScene(BaseScene):
             self.ball.target_player = target; gk.kick_cooldown = 1.0; gk.has_ball = False
         
     def _start_corner(self, favored_side, edge):
+        from systems.audio_manager import audio_manager
+        audio_manager.play_crowd_reaction("chant")
         pitch_rect = self.pitch.rect
         team_players = [p for p in (self.left_field if favored_side == "left" else self.right_field) if not p.red_card]
         bx = pitch_rect.right - 20 if favored_side == "left" else pitch_rect.left + 20
