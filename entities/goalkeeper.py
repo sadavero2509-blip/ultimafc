@@ -316,28 +316,28 @@ class Goalkeeper:
         head_r = int(radius * 0.55)
         
         hx = px
-        hy = cy - int(radius * 0.85)
+        hy = cy - int(radius * 1.2)  # Position the head higher to avoid overlap
         
         # 1. Legs and Feet (GK stands in place mostly, slight bob)
         lx = px - int(radius * 0.3)
         rx = px + int(radius * 0.3)
-        ly = cy + int(radius * 0.4)
+        ly = cy + int(radius * 0.3)
         
         # Left leg
-        pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + int(radius * 0.45)), 3)
-        pygame.draw.circle(surface, (30, 30, 30), (lx, ly + int(radius * 0.45)), 3)
+        pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + int(radius * 0.6)), 3)
+        pygame.draw.circle(surface, (30, 30, 30), (lx, ly + int(radius * 0.6)), 3)
         # Right leg
-        pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + int(radius * 0.45)), 3)
-        pygame.draw.circle(surface, (30, 30, 30), (rx, ly + int(radius * 0.45)), 3)
+        pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + int(radius * 0.6)), 3)
+        pygame.draw.circle(surface, (30, 30, 30), (rx, ly + int(radius * 0.6)), 3)
         
         # 2. Torso (GK Jersey)
-        ty = cy - int(radius * 0.1)
+        ty = cy - int(radius * 0.3)
         pygame.draw.rect(surface, self.color, (px - torso_w//2, ty - torso_h//2, torso_w, torso_h), border_radius=3)
         pygame.draw.rect(surface, BLACK, (px - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
         
         # 3. Shorts
         shorts_y = ty + torso_h//2 - 1
-        shorts_h = int(radius * 0.4)
+        shorts_h = int(radius * 0.45)
         # Goalkeepers usually wear dark/accent shorts
         pygame.draw.rect(surface, (30, 30, 35), (px - torso_w//2, shorts_y, torso_w, shorts_h), border_radius=1)
         pygame.draw.rect(surface, BLACK, (px - torso_w//2, shorts_y, torso_w, shorts_h), 1, border_radius=1)
@@ -350,13 +350,13 @@ class Goalkeeper:
         # 5. Arms & GK Gloves
         glove_color = (255, 120, 0) # Bright orange gloves
         lax = px - torso_w//2 - 1
-        lay = ty - torso_h//3
+        lay = ty - torso_h//4
         rax = px + torso_w//2 + 1
-        ray = ty - torso_h//3
+        ray = ty - torso_h//4
         
         # Goalkeeper arms ready stance/raise gloves on pass/kick charge
-        left_arm_y = lay + int(radius * 0.3) - glove_raise
-        right_arm_y = ray + int(radius * 0.3) - glove_raise
+        left_arm_y = lay + int(radius * 0.4) - glove_raise
+        right_arm_y = ray + int(radius * 0.4) - glove_raise
         
         pygame.draw.line(surface, self.color, (lax, lay), (lax - 3, left_arm_y), 3)
         pygame.draw.line(surface, self.color, (rax, ray), (rax + 3, right_arm_y), 3)

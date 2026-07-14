@@ -1009,48 +1009,63 @@ class FieldPlayer:
             slide_dir = self.direction if self.direction.length() > 0.1 else pygame.math.Vector2(1 if self.side == "left" else -1, 0)
             slide_dir = slide_dir.normalize()
             
-            hx = cx + int(slide_dir.x * radius * 0.5)
-            hy = cy + y_offset + int(slide_dir.y * radius * 0.5) - 2
+            # Let's draw the body horizontally along the slide direction
+            torso_cx = cx
+            torso_cy = cy + y_offset
+            perp = pygame.math.Vector2(-slide_dir.y, slide_dir.x)
             
-            # Legs extended backward
-            leg_x1 = cx - int(slide_dir.x * radius * 0.5) - int(slide_dir.y * radius * 0.2)
-            leg_y1 = cy + y_offset - int(slide_dir.y * radius * 0.5) + int(slide_dir.x * radius * 0.2) + 2
-            leg_x2 = cx - int(slide_dir.x * radius * 0.5) + int(slide_dir.y * radius * 0.2)
-            leg_y2 = cy + y_offset - int(slide_dir.y * radius * 0.5) - int(slide_dir.x * radius * 0.2) + 2
+            # Torso: length radius * 0.7, width radius * 0.5
+            t_len = radius * 0.7
+            t_wid = radius * 0.5
+            p1 = torso_cx + slide_dir * t_len + perp * t_wid
+            p2 = torso_cx + slide_dir * t_len - perp * t_wid
+            p3 = torso_cx - slide_dir * t_len - perp * t_wid
+            p4 = torso_cx - slide_dir * t_len + perp * t_wid
             
-            pygame.draw.line(surface, skin_color, (cx, cy + y_offset), (leg_x1, leg_y1), 3)
-            pygame.draw.line(surface, skin_color, (cx, cy + y_offset), (leg_x2, leg_y2), 3)
-            pygame.draw.circle(surface, (30, 30, 30), (leg_x1, leg_y1), 3)
-            pygame.draw.circle(surface, (30, 30, 30), (leg_x2, leg_y2), 3)
+            pygame.draw.polygon(surface, self.color, [(int(pt.x), int(pt.y)) for pt in [p1, p2, p3, p4]])
+            pygame.draw.polygon(surface, BLACK, [(int(pt.x), int(pt.y)) for pt in [p1, p2, p3, p4]], 1)
             
-            # Torso
-            pygame.draw.circle(surface, self.color, (cx, cy + y_offset), radius)
-            pygame.draw.circle(surface, BLACK, (cx, cy + y_offset), radius, 1)
-            
-            # Head
+            # Head: positioned forward along slide_dir
+            hx = torso_cx + int(slide_dir.x * radius * 1.1)
+            hy = torso_cy + int(slide_dir.y * radius * 1.1)
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
             pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
-            pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 1), int(head_r * 0.6))
+            pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
+            
+            # Legs: positioned backward along slide_dir
+            leg_start_l = torso_cx - slide_dir * t_len + perp * (t_wid * 0.5)
+            leg_end_l = leg_start_l - slide_dir * (radius * 0.8)
+            pygame.draw.line(surface, skin_color, (int(leg_start_l.x), int(leg_start_l.y)), (int(leg_end_l.x), int(leg_end_l.y)), 3)
+            pygame.draw.circle(surface, (45, 45, 45), (int(leg_end_l.x), int(leg_end_l.y)), 3)
+            
+            leg_start_r = torso_cx - slide_dir * t_len - perp * (t_wid * 0.5)
+            leg_end_r = leg_start_r - slide_dir * (radius * 0.8)
+            pygame.draw.line(surface, skin_color, (int(leg_start_r.x), int(leg_start_r.y)), (int(leg_end_r.x), int(leg_end_r.y)), 3)
+            pygame.draw.circle(surface, (45, 45, 45), (int(leg_end_r.x), int(leg_end_r.y)), 3)
         else:
             # Stand/Run/Celebrate details
             hx = cx
-            hy = cy - int(radius * 0.85)
+            hy = cy - int(radius * 1.2)  # Position the head higher to avoid overlap
             
-            # 1. Legs and Feet
-            leg_swing = math.sin(now * 16.0 + phase) * move_ratio * radius * 0.35
-            lx = cx - int(radius * 0.3)
-            rx = cx + int(radius * 0.3)
-            ly = cy + int(radius * 0.4)
+            # 1. Legs and Feet (drawing legs first so shorts cover the tops)
+            leg_swing = math.sin(now * 16.0 + phase) * move_ratio * radius * 0.4
+            lx = cx - int(radius * 0.35)
+            rx = cx + int(radius * 0.35)
+            ly = cy + int(radius * 0.3)  # start of legs
             
-            # Left leg
-            pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + int(radius * 0.4) + int(leg_swing)), 3)
-            pygame.draw.circle(surface, (30, 30, 30), (lx, ly + int(radius * 0.4) + int(leg_swing)), 3)
-            # Right leg
-            pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + int(radius * 0.4) - int(leg_swing)), 3)
-            pygame.draw.circle(surface, (30, 30, 30), (rx, ly + int(radius * 0.4) - int(leg_swing)), 3)
+            # Left leg (thigh/shin)
+            pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + int(radius * 0.6) + int(leg_swing)), 4)
+            # Left shoe
+            pygame.draw.circle(surface, (40, 40, 40), (lx, ly + int(radius * 0.6) + int(leg_swing)), 3)
+            
+            # Right leg (thigh/shin)
+            pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + int(radius * 0.6) - int(leg_swing)), 4)
+            # Right shoe
+            pygame.draw.circle(surface, (40, 40, 40), (rx, ly + int(radius * 0.6) - int(leg_swing)), 3)
             
             # 2. Torso (Shirt)
-            ty = cy - int(radius * 0.1)
+            ty = cy - int(radius * 0.3)
+            # Torso rect
             pygame.draw.rect(surface, self.color, (cx - torso_w//2, ty - torso_h//2, torso_w, torso_h), border_radius=3)
             pygame.draw.rect(surface, BLACK, (cx - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
             
@@ -1060,60 +1075,60 @@ class FieldPlayer:
             
             # 4. Shorts
             shorts_y = ty + torso_h//2 - 1
-            shorts_h = int(radius * 0.4)
+            shorts_h = int(radius * 0.45)
             pygame.draw.rect(surface, self.secondary, (cx - torso_w//2, shorts_y, torso_w, shorts_h), border_radius=1)
             pygame.draw.rect(surface, BLACK, (cx - torso_w//2, shorts_y, torso_w, shorts_h), 1, border_radius=1)
             
             # 5. Head & Hair
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
             pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
-            # Hair crown
+            # Hair crown (draw as an arch/circle covering top-back of head)
             pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
             
             # 6. Arms
             lax = cx - torso_w//2 - 1
-            lay = ty - torso_h//3
+            lay = ty - torso_h//4
             rax = cx + torso_w//2 + 1
-            ray = ty - torso_h//3
+            ray = ty - torso_h//4
             
             # Arm swing/action
             if celebrate:
                 # Both arms raised high
-                pygame.draw.line(surface, self.color, (lax, lay), (lax - 3, lay - int(radius * 0.7)), 2)
-                pygame.draw.line(surface, self.color, (rax, ray), (rax + 3, ray - int(radius * 0.7)), 2)
-                pygame.draw.circle(surface, skin_color, (lax - 3, lay - int(radius * 0.7)), 2)
-                pygame.draw.circle(surface, skin_color, (rax + 3, ray - int(radius * 0.7)), 2)
+                pygame.draw.line(surface, self.color, (lax, lay), (lax - 4, lay - int(radius * 0.8)), 3)
+                pygame.draw.line(surface, self.color, (rax, ray), (rax + 4, ray - int(radius * 0.8)), 3)
+                pygame.draw.circle(surface, skin_color, (lax - 4, lay - int(radius * 0.8)), 3)
+                pygame.draw.circle(surface, skin_color, (rax + 4, ray - int(radius * 0.8)), 3)
             elif (self.pass_charge > 0 or self.kick_charge > 0) and self.has_ball:
-                # Pointing arm
+                # Aim direction
                 aim = self.direction.normalize() if self.direction.length() > 0.1 else pygame.math.Vector2(1 if self.side == "left" else -1, 0)
-                px_arm = cx + int(aim.x * radius * 0.8)
-                py_arm = cy + int(aim.y * radius * 0.8)
+                # Pointing arm
+                px_arm = cx + int(aim.x * radius * 1.0)
+                py_arm = cy + int(aim.y * radius * 1.0)
                 pygame.draw.line(surface, self.secondary, (cx, cy), (px_arm, py_arm), 3)
-                pygame.draw.circle(surface, skin_color, (px_arm, py_arm), 2)
+                pygame.draw.circle(surface, skin_color, (px_arm, py_arm), 3)
+                pygame.draw.circle(surface, BLACK, (px_arm, py_arm), 3, 1)
             else:
                 # Running swing arms
                 arm_swing = math.sin(now * 16.0 + phase) * move_ratio * radius * 0.35
-                pygame.draw.line(surface, self.color, (lax, lay), (lax - 2, lay + int(radius * 0.4) + int(arm_swing)), 2)
-                pygame.draw.line(surface, self.color, (rax, ray), (rax + 2, ray + int(radius * 0.4) - int(arm_swing)), 2)
-                pygame.draw.circle(surface, skin_color, (lax - 2, lay + int(radius * 0.4) + int(arm_swing)), 2)
-                pygame.draw.circle(surface, skin_color, (rax + 2, ray + int(radius * 0.4) - int(arm_swing)), 2)
+                pygame.draw.line(surface, self.color, (lax, lay), (lax - 3, lay + int(radius * 0.5) + int(arm_swing)), 3)
+                pygame.draw.line(surface, self.color, (rax, ray), (rax + 3, ray + int(radius * 0.5) - int(arm_swing)), 3)
+                pygame.draw.circle(surface, skin_color, (lax - 3, lay + int(radius * 0.5) + int(arm_swing)), 2.5)
+                pygame.draw.circle(surface, skin_color, (rax + 3, ray + int(radius * 0.5) - int(arm_swing)), 2.5)
 
             # 7. Eyes
             blink = (math.sin(now * 3.0 + phase) + 1.0) / 2.0
             eye_open = 1.0 if blink > 0.12 else 0.15
             eye_r = max(1, int(head_r * 0.18))
             
-            # Eye offset based on facing/action direction
             aim_dir = self.direction.normalize() if self.direction.length() > 0.1 else pygame.math.Vector2(1 if self.side == "left" else -1, 0)
             ex = hx + int(aim_dir.x * head_r * 0.3)
             ey = hy + int(aim_dir.y * head_r * 0.3)
             
-            # Draw eyes perpendicular to looking direction
-            perp = pygame.math.Vector2(-aim_dir.y, aim_dir.x)
-            e1x = ex - int(perp.x * head_r * 0.3)
-            e1y = ey - int(perp.y * head_r * 0.3)
-            e2x = ex + int(perp.x * head_r * 0.3)
-            e2y = ey + int(perp.y * head_r * 0.3)
+            perp_eye = pygame.math.Vector2(-aim_dir.y, aim_dir.x)
+            e1x = ex - int(perp_eye.x * head_r * 0.3)
+            e1y = ey - int(perp_eye.y * head_r * 0.3)
+            e2x = ex + int(perp_eye.x * head_r * 0.3)
+            e2y = ey + int(perp_eye.y * head_r * 0.3)
             
             pygame.draw.circle(surface, BLACK, (int(e1x), int(e1y)), max(1, int(eye_r * eye_open)))
             pygame.draw.circle(surface, BLACK, (int(e2x), int(e2y)), max(1, int(eye_r * eye_open)))
