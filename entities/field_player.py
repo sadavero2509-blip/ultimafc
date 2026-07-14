@@ -1009,36 +1009,35 @@ class FieldPlayer:
             slide_dir = self.direction if self.direction.length() > 0.1 else pygame.math.Vector2(1 if self.side == "left" else -1, 0)
             slide_dir = slide_dir.normalize()
             
-            # Let's draw the body horizontally along the slide direction
-            torso_cx = cx
-            torso_cy = cy + y_offset
+            # Use Vector2 for the center so vector arithmetic works
+            torso_center = pygame.math.Vector2(cx, cy + y_offset)
             perp = pygame.math.Vector2(-slide_dir.y, slide_dir.x)
             
-            # Torso: length radius * 0.7, width radius * 0.5
+            # Torso: rotated rectangle along slide direction
             t_len = radius * 0.7
             t_wid = radius * 0.5
-            p1 = torso_cx + slide_dir * t_len + perp * t_wid
-            p2 = torso_cx + slide_dir * t_len - perp * t_wid
-            p3 = torso_cx - slide_dir * t_len - perp * t_wid
-            p4 = torso_cx - slide_dir * t_len + perp * t_wid
+            p1 = torso_center + slide_dir * t_len + perp * t_wid
+            p2 = torso_center + slide_dir * t_len - perp * t_wid
+            p3 = torso_center - slide_dir * t_len - perp * t_wid
+            p4 = torso_center - slide_dir * t_len + perp * t_wid
             
             pygame.draw.polygon(surface, self.color, [(int(pt.x), int(pt.y)) for pt in [p1, p2, p3, p4]])
             pygame.draw.polygon(surface, BLACK, [(int(pt.x), int(pt.y)) for pt in [p1, p2, p3, p4]], 1)
             
             # Head: positioned forward along slide_dir
-            hx = torso_cx + int(slide_dir.x * radius * 1.1)
-            hy = torso_cy + int(slide_dir.y * radius * 1.1)
+            hx = int(torso_center.x + slide_dir.x * radius * 1.1)
+            hy = int(torso_center.y + slide_dir.y * radius * 1.1)
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
             pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
             pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
             
             # Legs: positioned backward along slide_dir
-            leg_start_l = torso_cx - slide_dir * t_len + perp * (t_wid * 0.5)
+            leg_start_l = torso_center - slide_dir * t_len + perp * (t_wid * 0.5)
             leg_end_l = leg_start_l - slide_dir * (radius * 0.8)
             pygame.draw.line(surface, skin_color, (int(leg_start_l.x), int(leg_start_l.y)), (int(leg_end_l.x), int(leg_end_l.y)), 3)
             pygame.draw.circle(surface, (45, 45, 45), (int(leg_end_l.x), int(leg_end_l.y)), 3)
             
-            leg_start_r = torso_cx - slide_dir * t_len - perp * (t_wid * 0.5)
+            leg_start_r = torso_center - slide_dir * t_len - perp * (t_wid * 0.5)
             leg_end_r = leg_start_r - slide_dir * (radius * 0.8)
             pygame.draw.line(surface, skin_color, (int(leg_start_r.x), int(leg_start_r.y)), (int(leg_end_r.x), int(leg_end_r.y)), 3)
             pygame.draw.circle(surface, (45, 45, 45), (int(leg_end_r.x), int(leg_end_r.y)), 3)

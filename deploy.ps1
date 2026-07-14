@@ -62,6 +62,27 @@ if (Test-Path "$root\settings.py") {
 Write-Host "   [OK] Copiado a NeoFutbolArcade_Release." -ForegroundColor Green
 Write-Host ""
 
+# -- PASO 3b: Sincronizar instalacion local (AppData) --
+$localInstall = "$env:LOCALAPPDATA\Programs\NeoFutbol Arcade"
+if (Test-Path $localInstall) {
+    Write-Host "[3b] Sincronizando instalacion local..." -ForegroundColor Yellow
+    Copy-Item -Path "$root\dist\NeoFutbolArcade.exe" -Destination "$localInstall\NeoFutbolArcade.exe" -Force
+    if (Test-Path "$root\assets") {
+        Copy-Item -Path "$root\assets" -Destination "$localInstall\" -Recurse -Force
+    }
+    if (Test-Path "$root\data") {
+        Copy-Item -Path "$root\data" -Destination "$localInstall\" -Recurse -Force
+        Get-ChildItem -Path "$localInstall\data" -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    foreach ($f in @("settings.py", "server_cfg.py", "server_config.json")) {
+        if (Test-Path "$root\$f") {
+            Copy-Item -Path "$root\$f" -Destination "$localInstall\$f" -Force
+        }
+    }
+    Write-Host "   [OK] Instalacion local actualizada ($localInstall)." -ForegroundColor Green
+    Write-Host ""
+}
+
 # -- PASO 4: Git commit --
 Write-Host "[4/5] Git commit..." -ForegroundColor Yellow
 Set-Location $root
