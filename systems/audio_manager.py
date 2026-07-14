@@ -43,10 +43,13 @@ class AudioManager:
     def load_all_sounds(self):
         import sys
         if getattr(sys, 'frozen', False):
-            exe_dir = os.path.dirname(sys.executable)
-            audio_dir = os.path.join(exe_dir, "assets", "audio")
+            # Prioritize PyInstaller temporary bundle directory (_MEIPASS)
+            base_path = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+            audio_dir = os.path.join(base_path, "assets", "audio")
             if not os.path.exists(audio_dir):
-                audio_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "audio")
+                # Fallback to executable folder
+                exe_dir = os.path.dirname(sys.executable)
+                audio_dir = os.path.join(exe_dir, "assets", "audio")
         else:
             audio_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "audio")
         

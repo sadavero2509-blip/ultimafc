@@ -43,6 +43,22 @@ Write-Host ""
 # -- PASO 3: Copiar a release --
 Write-Host "[3/5] Copiando a carpeta de distribucion..." -ForegroundColor Yellow
 Copy-Item -Path "$root\dist\NeoFutbolArcade.exe" -Destination "$root\dist\NeoFutbolArcade_Release\NeoFutbolArcade.exe" -Force
+
+# Sincronizar assets (audio, etc.) al release
+if (Test-Path "$root\assets") {
+    Copy-Item -Path "$root\assets" -Destination "$root\dist\NeoFutbolArcade_Release\" -Recurse -Force
+}
+# Sincronizar data (rosters, equipos, etc.) al release
+if (Test-Path "$root\data") {
+    Copy-Item -Path "$root\data" -Destination "$root\dist\NeoFutbolArcade_Release\" -Recurse -Force
+    # Limpiar __pycache__ del release
+    Get-ChildItem -Path "$root\dist\NeoFutbolArcade_Release\data" -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
+# Sincronizar settings.py al release
+if (Test-Path "$root\settings.py") {
+    Copy-Item -Path "$root\settings.py" -Destination "$root\dist\NeoFutbolArcade_Release\settings.py" -Force
+}
+
 Write-Host "   [OK] Copiado a NeoFutbolArcade_Release." -ForegroundColor Green
 Write-Host ""
 
