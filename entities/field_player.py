@@ -168,7 +168,7 @@ class FieldPlayer:
                 # Si el rival está más cerca del balón que yo, es falta probable
                 if opp_to_ball < dist_to_ball - 5:
                     # Probabilidad base 12%, modulada por velocidad del tackleador
-                    speed_factor = min(self.vel.length() / 400, 1.0) if self.vel.length() > 0 else 0.5
+                    speed_factor = min(self._last_move_speed / 400.0, 1.0)
                     foul_chance = 0.08 + 0.06 * speed_factor  # 8%-14% según velocidad
                     if random.random() < foul_chance:
                         match_scene._handle_foul(self, opp)
