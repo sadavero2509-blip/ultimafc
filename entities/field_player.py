@@ -1155,21 +1155,6 @@ class FieldPlayer:
             pygame.draw.line(surface, GOLD, (lax_cap - 5, arm_mid_y + 1), (lax_cap + 1, arm_mid_y + 1), 3)
             pygame.draw.line(surface, (255, 255, 100), (lax_cap - 5, arm_mid_y), (lax_cap + 1, arm_mid_y), 2)
 
-            # Badge 'C' dorado flotando sobre la cabeza
-            cap_hy = cy - int(radius * 1.2)
-            badge_y = cap_hy - head_r - 14
-            badge_pulse = 0.7 + 0.3 * math.sin(now * 3.0 + phase)
-            badge_col = (int(218 * badge_pulse), int(165 * badge_pulse), int(32 * badge_pulse))
-            # Fondo oscuro del badge
-            pygame.draw.circle(surface, (20, 20, 20), (cx, badge_y), 8)
-            pygame.draw.circle(surface, badge_col, (cx, badge_y), 8, 2)
-            try:
-                font_cap = pygame.font.SysFont("Arial", 11, bold=True)
-            except:
-                font_cap = pygame.font.Font(None, 11)
-            c_surf = font_cap.render("C", True, badge_col)
-            surface.blit(c_surf, (cx - c_surf.get_width() // 2, badge_y - c_surf.get_height() // 2))
-
         # Indicador de jugador controlado
         if self.is_controlled:
             tri_y = cy - radius - 12
@@ -1182,8 +1167,7 @@ class FieldPlayer:
             try: font_n = pygame.font.SysFont("Arial", 12, bold=True)
             except: font_n = pygame.font.Font(None, 12)
             name_str = self.player_data["name"]
-            name_col = GOLD if self.player_data.get("is_captain") else WHITE
-            name_surf = font_n.render(name_str, True, name_col)
+            name_surf = font_n.render(name_str, True, WHITE)
             surface.blit(name_surf, (cx - name_surf.get_width() // 2, cy + radius + 15))
 
             # --- BARRA DE STAMINA (Solo para el controlado) ---
