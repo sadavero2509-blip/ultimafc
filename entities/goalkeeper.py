@@ -308,7 +308,9 @@ class Goalkeeper:
         # --- Procedural Humanoid Goalkeeper Model ---
         num_val = self.player_data.get("num", 1)
         skin_color = (253, 213, 185) if num_val % 4 != 0 else (120, 80, 55)
+        skin_shadow = (max(0, skin_color[0]-35), max(0, skin_color[1]-30), max(0, skin_color[2]-25))
         hair_color = [(45, 35, 30), (95, 65, 45), (210, 180, 100), (145, 90, 50), (25, 25, 25)][num_val % 5]
+        hair_style = num_val % 4
 
         # Base proportions
         torso_w = int(radius * 1.35)
@@ -318,60 +320,102 @@ class Goalkeeper:
         hx = px
         hy = cy - int(radius * 1.2)  # Position the head higher to avoid overlap
         
-        # 1. Legs and Feet (GK stands in place mostly, slight bob)
+        # 1. Legs and Feet (GK stands in place mostly, slight bob, socks and boots)
         lx = px - int(radius * 0.3)
         rx = px + int(radius * 0.3)
         ly = cy + int(radius * 0.3)
+        leg_len = int(radius * 0.6)
         
         # Left leg
-        pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + int(radius * 0.6)), 3)
-        pygame.draw.circle(surface, (30, 30, 30), (lx, ly + int(radius * 0.6)), 3)
+        pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + leg_len // 2), 3)
+        pygame.draw.line(surface, self.color, (lx, ly + leg_len // 2), (lx, ly + leg_len), 3)
+        pygame.draw.line(surface, WHITE, (lx - 1, ly + leg_len // 2), (lx + 1, ly + leg_len // 2), 1)
+        pygame.draw.circle(surface, (40, 40, 40), (lx, ly + leg_len), 3)
+        
         # Right leg
-        pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + int(radius * 0.6)), 3)
-        pygame.draw.circle(surface, (30, 30, 30), (rx, ly + int(radius * 0.6)), 3)
+        pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + leg_len // 2), 3)
+        pygame.draw.line(surface, self.color, (rx, ly + leg_len // 2), (rx, ly + leg_len), 3)
+        pygame.draw.line(surface, WHITE, (rx - 1, ly + leg_len // 2), (rx + 1, ly + leg_len // 2), 1)
+        pygame.draw.circle(surface, (40, 40, 40), (rx, ly + leg_len), 3)
         
         # 2. Torso (GK Jersey)
         ty = cy - int(radius * 0.3)
         pygame.draw.rect(surface, self.color, (px - torso_w//2, ty - torso_h//2, torso_w, torso_h), border_radius=3)
+        shirt_shadow = (max(0, self.color[0]-40), max(0, self.color[1]-40), max(0, self.color[2]-40))
+        pygame.draw.rect(surface, shirt_shadow, (px, ty - torso_h//2, torso_w//2, torso_h), border_radius=3)
+        
+        # Collar and accents
+        col_w = max(4, torso_w // 3)
+        col_h = max(2, torso_h // 4)
+        col_col = self.team_data.get("accent", WHITE) if hasattr(self, "team_data") and self.team_data else WHITE
+        pygame.draw.polygon(surface, col_col, [(px - col_w//2, ty - torso_h//2), (px, ty - torso_h//2 + col_h), (px + col_w//2, ty - torso_h//2)])
         pygame.draw.rect(surface, BLACK, (px - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
         
         # 3. Shorts
         shorts_y = ty + torso_h//2 - 1
         shorts_h = int(radius * 0.45)
-        # Goalkeepers usually wear dark/accent shorts
         pygame.draw.rect(surface, (30, 30, 35), (px - torso_w//2, shorts_y, torso_w, shorts_h), border_radius=1)
+        pygame.draw.rect(surface, (20, 20, 23), (px, shorts_y, torso_w//2, shorts_h), border_radius=1)
         pygame.draw.rect(surface, BLACK, (px - torso_w//2, shorts_y, torso_w, shorts_h), 1, border_radius=1)
         
         # 4. Head & Hair
         pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
+        pygame.draw.circle(surface, skin_shadow, (hx + 1, hy + 1), head_r - 1)
+        pygame.draw.circle(surface, skin_color, (hx, hy), head_r - 1)
         pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
-        pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
         
-        # 5. Arms & GK Gloves
+        # Hairstyles
+        if hair_style == 0:
+            pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
+        elif hair_style == 1:
+            for dx, dy in [(-2, -head_r+1), (0, -head_r), (2, -head_r+1), (-3, -head_r+3), (3, -head_r+3)]:
+                pygame.draw.circle(surface, hair_color, (hx + dx, hy + dy), int(head_r * 0.45))
+        elif hair_style == 2:
+            pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.7))
+            for dx in [-3, 0, 3]:
+                pygame.draw.polygon(surface, hair_color, [(hx+dx-1, hy-head_r+1), (hx+dx, hy-head_r-2), (hx+dx+1, hy-head_r+1)])
+        else:
+            pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
+            aim_x = 1 if self.side == "left" else -1
+            py_x = hx - int(aim_x * head_r * 0.8)
+            py_y = hy + 2
+            pygame.draw.circle(surface, hair_color, (py_x, py_y), int(head_r * 0.4))
+        
+        # 5. Arms, Sleeves & GK Gloves
         glove_color = (255, 120, 0) # Bright orange gloves
         lax = px - torso_w//2 - 1
         lay = ty - torso_h//4
         rax = px + torso_w//2 + 1
         ray = ty - torso_h//4
         
-        # Goalkeeper arms ready stance/raise gloves on pass/kick charge
         left_arm_y = lay + int(radius * 0.4) - glove_raise
         right_arm_y = ray + int(radius * 0.4) - glove_raise
         
-        pygame.draw.line(surface, self.color, (lax, lay), (lax - 3, left_arm_y), 3)
-        pygame.draw.line(surface, self.color, (rax, ray), (rax + 3, right_arm_y), 3)
+        # Left arm with sleeve
+        shoulder_l = (lax, lay)
+        glove_l = (lax - 3, left_arm_y)
+        sleeve_end_l = (lax + int((glove_l[0] - lax) * 0.45), lay + int((glove_l[1] - lay) * 0.45))
+        pygame.draw.line(surface, self.color, shoulder_l, sleeve_end_l, 3)
+        pygame.draw.line(surface, skin_color, sleeve_end_l, glove_l, 3)
+        
+        # Right arm with sleeve
+        shoulder_r = (rax, ray)
+        glove_r = (rax + 3, right_arm_y)
+        sleeve_end_r = (rax + int((glove_r[0] - rax) * 0.45), ray + int((glove_r[1] - ray) * 0.45))
+        pygame.draw.line(surface, self.color, shoulder_r, sleeve_end_r, 3)
+        pygame.draw.line(surface, skin_color, sleeve_end_r, glove_r, 3)
+        
         # Big gloves
-        pygame.draw.circle(surface, glove_color, (lax - 3, left_arm_y), 4)
-        pygame.draw.circle(surface, glove_color, (rax + 3, right_arm_y), 4)
-        pygame.draw.circle(surface, BLACK, (lax - 3, left_arm_y), 4, 1)
-        pygame.draw.circle(surface, BLACK, (rax + 3, right_arm_y), 4, 1)
+        pygame.draw.circle(surface, glove_color, glove_l, 4)
+        pygame.draw.circle(surface, glove_color, glove_r, 4)
+        pygame.draw.circle(surface, BLACK, glove_l, 4, 1)
+        pygame.draw.circle(surface, BLACK, glove_r, 4, 1)
 
-        # 6. Eyes
+        # 6. Eyes, Eyebrows & Mouth
         blink = (math.sin(now * 4.0 + phase) + 1.0) / 2.0
         eye_open = 1.0 if blink > 0.15 else 0.15
         eye_r = max(1, int(head_r * 0.18))
         
-        # Goalkeeper faces forward/where ball is (facing side/forward)
         gk_aim = pygame.math.Vector2(1 if self.side == "left" else -1, 0)
         ex = hx + int(gk_aim.x * head_r * 0.3)
         ey = hy + int(gk_aim.y * head_r * 0.3)
@@ -384,6 +428,17 @@ class Goalkeeper:
         
         pygame.draw.circle(surface, BLACK, (int(e1x), int(e1y)), max(1, int(eye_r * eye_open)))
         pygame.draw.circle(surface, BLACK, (int(e2x), int(e2y)), max(1, int(eye_r * eye_open)))
+        
+        # Eyebrows
+        eb_y_off = -int(head_r * 0.25)
+        eb_color = (max(0, hair_color[0]-15), max(0, hair_color[1]-15), max(0, hair_color[2]-15))
+        pygame.draw.line(surface, eb_color, (int(e1x - 2), int(e1y + eb_y_off - 1)), (int(e1x + 1), int(e1y + eb_y_off)), 1)
+        pygame.draw.line(surface, eb_color, (int(e2x - 1), int(e2y + eb_y_off)), (int(e2x + 2), int(e2y + eb_y_off - 1)), 1)
+        
+        # Mouth
+        m_x = hx + int(gk_aim.x * head_r * 0.4)
+        m_y = hy + int(head_r * 0.35)
+        pygame.draw.line(surface, (100, 50, 50), (int(m_x - perp.x*2), int(m_y - perp.y*2)), (int(m_x + perp.x*2), int(m_y + perp.y*2)), 1)
 
         # Indicador de jugador controlado
         if self.is_controlled:

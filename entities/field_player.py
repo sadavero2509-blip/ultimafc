@@ -997,13 +997,20 @@ class FieldPlayer:
         # --- Procedural Humanoid Player Model ---
         num_val = self.player_data.get("num", 0)
         skin_color = (253, 213, 185) if num_val % 4 != 0 else (120, 80, 55)  # Diverse skins
+        skin_shadow = (max(0, skin_color[0]-35), max(0, skin_color[1]-30), max(0, skin_color[2]-25))
         hair_color = [(45, 35, 30), (95, 65, 45), (210, 180, 100), (145, 90, 50), (25, 25, 25)][num_val % 5]
-
+        hair_style = num_val % 4  # Hairstyle variety
+        
         # Base proportions
         torso_w = int(radius * 1.3)
         torso_h = int(radius * 1.0)
         head_r = int(radius * 0.55)
         
+        aim_dir = self.direction.normalize() if self.direction.length() > 0.1 else pygame.math.Vector2(1 if self.side == "left" else -1, 0)
+        sock_color = self.color
+        boot_color_l = [(50, 255, 50), (255, 100, 0), (0, 220, 255), (255, 220, 0), (240, 240, 240)][num_val % 5]
+        boot_color_r = [(50, 255, 50), (255, 100, 0), (0, 220, 255), (255, 220, 0), (240, 240, 240)][(num_val + 1) % 5]
+
         # Slide/tackle adjustments
         if tackle_active:
             slide_dir = self.direction if self.direction.length() > 0.1 else pygame.math.Vector2(1 if self.side == "left" else -1, 0)
@@ -1022,25 +1029,53 @@ class FieldPlayer:
             p4 = torso_center - slide_dir * t_len + perp * t_wid
             
             pygame.draw.polygon(surface, self.color, [(int(pt.x), int(pt.y)) for pt in [p1, p2, p3, p4]])
+            # Add shirting shadow for detail
+            shirt_shadow = (max(0, self.color[0]-40), max(0, self.color[1]-40), max(0, self.color[2]-40))
+            pygame.draw.polygon(surface, shirt_shadow, [(int(pt.x), int(pt.y)) for pt in [p2, p3, p4]], 0)
             pygame.draw.polygon(surface, BLACK, [(int(pt.x), int(pt.y)) for pt in [p1, p2, p3, p4]], 1)
             
             # Head: positioned forward along slide_dir
             hx = int(torso_center.x + slide_dir.x * radius * 1.1)
             hy = int(torso_center.y + slide_dir.y * radius * 1.1)
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
+            pygame.draw.circle(surface, skin_shadow, (hx + 1, hy + 1), head_r - 1)
+            pygame.draw.circle(surface, skin_color, (hx, hy), head_r - 1)
             pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
-            pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
             
-            # Legs: positioned backward along slide_dir
+            # Hair for tackle
+            if hair_style == 0:
+                pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
+            elif hair_style == 1:
+                for dx, dy in [(-2, -2), (0, -3), (2, -2)]:
+                    pygame.draw.circle(surface, hair_color, (hx + dx - int(slide_dir.x * 2), hy + dy - int(slide_dir.y * 2)), int(head_r * 0.45))
+            elif hair_style == 2:
+                pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
+                for dx in [-2, 0, 2]:
+                    pygame.draw.polygon(surface, hair_color, [
+                        (hx - int(slide_dir.x * 2) + dx, hy - int(slide_dir.y * 2) - 1),
+                        (hx - int(slide_dir.x * 3) + dx - 2, hy - int(slide_dir.y * 3) - 2),
+                        (hx - int(slide_dir.x * 2) + dx + 1, hy - int(slide_dir.y * 2) - 1)
+                    ])
+            else:
+                pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
+                py_x = hx - int(slide_dir.x * head_r * 0.8)
+                py_y = hy - int(slide_dir.y * head_r * 0.2)
+                pygame.draw.circle(surface, hair_color, (py_x, py_y), int(head_r * 0.45))
+            
+            # Legs: positioned backward along slide_dir with socks and boots
             leg_start_l = torso_center - slide_dir * t_len + perp * (t_wid * 0.5)
             leg_end_l = leg_start_l - slide_dir * (radius * 0.8)
-            pygame.draw.line(surface, skin_color, (int(leg_start_l.x), int(leg_start_l.y)), (int(leg_end_l.x), int(leg_end_l.y)), 3)
-            pygame.draw.circle(surface, (45, 45, 45), (int(leg_end_l.x), int(leg_end_l.y)), 3)
+            leg_mid_l = leg_start_l + (leg_end_l - leg_start_l) * 0.5
+            pygame.draw.line(surface, skin_color, (int(leg_start_l.x), int(leg_start_l.y)), (int(leg_mid_l.x), int(leg_mid_l.y)), 3)
+            pygame.draw.line(surface, sock_color, (int(leg_mid_l.x), int(leg_mid_l.y)), (int(leg_end_l.x), int(leg_end_l.y)), 3)
+            pygame.draw.circle(surface, boot_color_l, (int(leg_end_l.x), int(leg_end_l.y)), 3)
             
             leg_start_r = torso_center - slide_dir * t_len - perp * (t_wid * 0.5)
             leg_end_r = leg_start_r - slide_dir * (radius * 0.8)
-            pygame.draw.line(surface, skin_color, (int(leg_start_r.x), int(leg_start_r.y)), (int(leg_end_r.x), int(leg_end_r.y)), 3)
-            pygame.draw.circle(surface, (45, 45, 45), (int(leg_end_r.x), int(leg_end_r.y)), 3)
+            leg_mid_r = leg_start_r + (leg_end_r - leg_start_r) * 0.5
+            pygame.draw.line(surface, skin_color, (int(leg_start_r.x), int(leg_start_r.y)), (int(leg_mid_r.x), int(leg_mid_r.y)), 3)
+            pygame.draw.line(surface, sock_color, (int(leg_mid_r.x), int(leg_mid_r.y)), (int(leg_end_r.x), int(leg_end_r.y)), 3)
+            pygame.draw.circle(surface, boot_color_r, (int(leg_end_r.x), int(leg_end_r.y)), 3)
         else:
             # Stand/Run/Celebrate details
             hx = cx
@@ -1051,70 +1086,117 @@ class FieldPlayer:
             lx = cx - int(radius * 0.35)
             rx = cx + int(radius * 0.35)
             ly = cy + int(radius * 0.3)  # start of legs
+            leg_len = int(radius * 0.6)
+            swing_l = int(leg_swing)
+            swing_r = -int(leg_swing)
             
-            # Left leg (thigh/shin)
-            pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + int(radius * 0.6) + int(leg_swing)), 4)
-            # Left shoe
-            pygame.draw.circle(surface, (40, 40, 40), (lx, ly + int(radius * 0.6) + int(leg_swing)), 3)
+            # Left leg
+            pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + leg_len // 2 + swing_l // 2), 4)
+            pygame.draw.line(surface, sock_color, (lx, ly + leg_len // 2 + swing_l // 2), (lx, ly + leg_len + swing_l), 4)
+            pygame.draw.line(surface, WHITE, (lx - 2, ly + leg_len // 2 + swing_l // 2), (lx + 2, ly + leg_len // 2 + swing_l // 2), 1)
+            pygame.draw.circle(surface, boot_color_l, (lx, ly + leg_len + swing_l), 3)
+            pygame.draw.line(surface, (30, 30, 30), (lx - 2, ly + leg_len + swing_l + 1), (lx + 2, ly + leg_len + swing_l + 1), 1)
             
-            # Right leg (thigh/shin)
-            pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + int(radius * 0.6) - int(leg_swing)), 4)
-            # Right shoe
-            pygame.draw.circle(surface, (40, 40, 40), (rx, ly + int(radius * 0.6) - int(leg_swing)), 3)
+            # Right leg
+            pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + leg_len // 2 + swing_r // 2), 4)
+            pygame.draw.line(surface, sock_color, (rx, ly + leg_len // 2 + swing_r // 2), (rx, ly + leg_len + swing_r), 4)
+            pygame.draw.line(surface, WHITE, (rx - 2, ly + leg_len // 2 + swing_r // 2), (rx + 2, ly + leg_len // 2 + swing_r // 2), 1)
+            pygame.draw.circle(surface, boot_color_r, (rx, ly + leg_len + swing_r), 3)
+            pygame.draw.line(surface, (30, 30, 30), (rx - 2, ly + leg_len + swing_r + 1), (rx + 2, ly + leg_len + swing_r + 1), 1)
             
             # 2. Torso (Shirt)
             ty = cy - int(radius * 0.3)
-            # Torso rect
             pygame.draw.rect(surface, self.color, (cx - torso_w//2, ty - torso_h//2, torso_w, torso_h), border_radius=3)
+            shirt_shadow = (max(0, self.color[0]-40), max(0, self.color[1]-40), max(0, self.color[2]-40))
+            pygame.draw.rect(surface, shirt_shadow, (cx, ty - torso_h//2, torso_w//2, torso_h), border_radius=3)
             pygame.draw.rect(surface, BLACK, (cx - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
             
-            # 3. Uniform stripe/accent
+            # 3. Uniform stripe/accent & Collar
             stripe_w = max(2, torso_w // 4)
             pygame.draw.rect(surface, self.secondary, (cx - stripe_w//2, ty - torso_h//2, stripe_w, torso_h))
+            col_w = max(4, torso_w // 3)
+            col_h = max(2, torso_h // 4)
+            pygame.draw.polygon(surface, self.secondary, [(cx - col_w//2, ty - torso_h//2), (cx, ty - torso_h//2 + col_h), (cx + col_w//2, ty - torso_h//2)])
+            pygame.draw.rect(surface, BLACK, (cx - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
             
             # 4. Shorts
             shorts_y = ty + torso_h//2 - 1
             shorts_h = int(radius * 0.45)
             pygame.draw.rect(surface, self.secondary, (cx - torso_w//2, shorts_y, torso_w, shorts_h), border_radius=1)
+            shorts_shadow = (max(0, self.secondary[0]-40), max(0, self.secondary[1]-40), max(0, self.secondary[2]-40))
+            pygame.draw.rect(surface, shorts_shadow, (cx, shorts_y, torso_w//2, shorts_h), border_radius=1)
             pygame.draw.rect(surface, BLACK, (cx - torso_w//2, shorts_y, torso_w, shorts_h), 1, border_radius=1)
             
             # 5. Head & Hair
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
+            pygame.draw.circle(surface, skin_shadow, (hx + 1, hy + 1), head_r - 1)
+            pygame.draw.circle(surface, skin_color, (hx, hy), head_r - 1)
             pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
-            # Hair crown (draw as an arch/circle covering top-back of head)
-            pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
             
-            # 6. Arms
+            # Hairstyles
+            if hair_style == 0:
+                pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
+            elif hair_style == 1:
+                for dx, dy in [(-2, -head_r+1), (0, -head_r), (2, -head_r+1), (-3, -head_r+3), (3, -head_r+3)]:
+                    pygame.draw.circle(surface, hair_color, (hx + dx, hy + dy), int(head_r * 0.45))
+            elif hair_style == 2:
+                pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.7))
+                for dx in [-3, 0, 3]:
+                    pygame.draw.polygon(surface, hair_color, [(hx+dx-1, hy-head_r+1), (hx+dx, hy-head_r-2), (hx+dx+1, hy-head_r+1)])
+            else:
+                pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
+                py_x = hx - int(aim_dir.x * head_r * 0.8)
+                py_y = hy - int(aim_dir.y * head_r * 0.2) + 2
+                pygame.draw.circle(surface, hair_color, (py_x, py_y), int(head_r * 0.4))
+                
+            if num_val % 7 == 0:  # Headband
+                pygame.draw.line(surface, self.secondary, (hx - head_r + 1, hy - head_r + 4), (hx + head_r - 1, hy - head_r + 4), 2)
+            
+            # 6. Arms & Sleeves
             lax = cx - torso_w//2 - 1
             lay = ty - torso_h//4
             rax = cx + torso_w//2 + 1
             ray = ty - torso_h//4
             
-            # Arm swing/action
             if celebrate:
-                # Both arms raised high
-                pygame.draw.line(surface, self.color, (lax, lay), (lax - 4, lay - int(radius * 0.8)), 3)
-                pygame.draw.line(surface, self.color, (rax, ray), (rax + 4, ray - int(radius * 0.8)), 3)
-                pygame.draw.circle(surface, skin_color, (lax - 4, lay - int(radius * 0.8)), 3)
-                pygame.draw.circle(surface, skin_color, (rax + 4, ray - int(radius * 0.8)), 3)
+                sh_l = (lax, lay)
+                hd_l = (lax - 4, lay - int(radius * 0.8))
+                sl_l = (lax + int((hd_l[0] - lax) * 0.45), lay + int((hd_l[1] - lay) * 0.45))
+                pygame.draw.line(surface, self.color, sh_l, sl_l, 3)
+                pygame.draw.line(surface, skin_color, sl_l, hd_l, 3)
+                pygame.draw.circle(surface, skin_color, hd_l, 3)
+
+                sh_r = (rax, ray)
+                hd_r = (rax + 4, ray - int(radius * 0.8))
+                sl_r = (rax + int((hd_r[0] - rax) * 0.45), ray + int((hd_r[1] - ray) * 0.45))
+                pygame.draw.line(surface, self.color, sh_r, sl_r, 3)
+                pygame.draw.line(surface, skin_color, sl_r, hd_r, 3)
+                pygame.draw.circle(surface, skin_color, hd_r, 3)
             elif (self.pass_charge > 0 or self.kick_charge > 0) and self.has_ball:
-                # Aim direction
                 aim = self.direction.normalize() if self.direction.length() > 0.1 else pygame.math.Vector2(1 if self.side == "left" else -1, 0)
-                # Pointing arm
                 px_arm = cx + int(aim.x * radius * 1.0)
                 py_arm = cy + int(aim.y * radius * 1.0)
                 pygame.draw.line(surface, self.secondary, (cx, cy), (px_arm, py_arm), 3)
                 pygame.draw.circle(surface, skin_color, (px_arm, py_arm), 3)
                 pygame.draw.circle(surface, BLACK, (px_arm, py_arm), 3, 1)
             else:
-                # Running swing arms
                 arm_swing = math.sin(now * 16.0 + phase) * move_ratio * radius * 0.35
-                pygame.draw.line(surface, self.color, (lax, lay), (lax - 3, lay + int(radius * 0.5) + int(arm_swing)), 3)
-                pygame.draw.line(surface, self.color, (rax, ray), (rax + 3, ray + int(radius * 0.5) - int(arm_swing)), 3)
-                pygame.draw.circle(surface, skin_color, (lax - 3, lay + int(radius * 0.5) + int(arm_swing)), 2.5)
-                pygame.draw.circle(surface, skin_color, (rax + 3, ray + int(radius * 0.5) - int(arm_swing)), 2.5)
+                
+                sh_l = (lax, lay)
+                hd_l = (lax - 3, lay + int(radius * 0.5) + int(arm_swing))
+                sl_l = (lax + int((hd_l[0] - lax) * 0.45), lay + int((hd_l[1] - lay) * 0.45))
+                pygame.draw.line(surface, self.color, sh_l, sl_l, 3)
+                pygame.draw.line(surface, skin_color, sl_l, hd_l, 3)
+                pygame.draw.circle(surface, skin_color, hd_l, 2.5)
+                
+                sh_r = (rax, ray)
+                hd_r = (rax + 3, ray + int(radius * 0.5) - int(arm_swing))
+                sl_r = (rax + int((hd_r[0] - rax) * 0.45), ray + int((hd_r[1] - ray) * 0.45))
+                pygame.draw.line(surface, self.color, sh_r, sl_r, 3)
+                pygame.draw.line(surface, skin_color, sl_r, hd_r, 3)
+                pygame.draw.circle(surface, skin_color, hd_r, 2.5)
 
-            # 7. Eyes
+            # 7. Eyes, Eyebrows & Mouth
             blink = (math.sin(now * 3.0 + phase) + 1.0) / 2.0
             eye_open = 1.0 if blink > 0.12 else 0.15
             eye_r = max(1, int(head_r * 0.18))
@@ -1131,6 +1213,20 @@ class FieldPlayer:
             
             pygame.draw.circle(surface, BLACK, (int(e1x), int(e1y)), max(1, int(eye_r * eye_open)))
             pygame.draw.circle(surface, BLACK, (int(e2x), int(e2y)), max(1, int(eye_r * eye_open)))
+            
+            # Eyebrows
+            eb_y_off = -int(head_r * 0.25)
+            eb_color = (max(0, hair_color[0]-15), max(0, hair_color[1]-15), max(0, hair_color[2]-15))
+            pygame.draw.line(surface, eb_color, (int(e1x - 2), int(e1y + eb_y_off - 1)), (int(e1x + 1), int(e1y + eb_y_off)), 1)
+            pygame.draw.line(surface, eb_color, (int(e2x - 1), int(e2y + eb_y_off)), (int(e2x + 2), int(e2y + eb_y_off - 1)), 1)
+            
+            # Mouth
+            m_x = hx + int(aim_dir.x * head_r * 0.4)
+            m_y = hy + int(head_r * 0.35)
+            if celebrate:
+                pygame.draw.circle(surface, (180, 50, 50), (int(m_x), int(m_y)), 2)
+            else:
+                pygame.draw.line(surface, (100, 50, 50), (int(m_x - perp_eye.x*2), int(m_y - perp_eye.y*2)), (int(m_x + perp_eye.x*2), int(m_y + perp_eye.y*2)), 1)
 
         # Celebración: anillo + chispas simples
         if celebrate:
