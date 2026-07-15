@@ -100,31 +100,27 @@ class UltimateManager:
         ]
 
         # EVENTO MUNDIAL
-        from data.event_worldcup import is_event_active
-        if is_event_active():
-            self.store_packs.append({
-                "id": "wc_mega_pack", "name": "MEGASOBRE MUNDIAL 2026", "price": 75000, "price_points": 2500, "event": "WC", "cat": "PROMO", "type": "PACK",
-                "total_items": 57, "legend_chance": 0.05, "event_chance": 0.05, "color_tier": "ELITE", 
-                "details": {
-                    "players": "47+3 Picks", "min_players": 47, "max_players": 47, "guaranteed": "3 PICKS + 47 WC", 
-                    "prob": "ESPECIAL: 5% | PICKS: 20% ESP", "pick_count": 3, "pick_chance": 1.0, "pick_special_chance": 0.2,
-                    "embedded_picks": [
-                        {"id": "wc_pick", "name": "PLAYER PICK MUNDIAL", "details": {"options": 3, "min_ovr": 80, "is_wc": True}}
-                    ]
-                }
-            })
-            self.store_packs.append({
-                "id": "worldcup", "name": "SOBRE MUNDIAL 2026", "price": 35000, "price_points": 1500, "event": "WC", "cat": "PROMO", "type": "PACK",
-                "total_items": 12, "legend_chance": 0.02, "event_chance": 0.015, "color_tier": "ORO", "details": {"players": "12", "min_players": 12, "max_players": 12, "guaranteed": "ORO WC (82+)", "min_ovr": 82, "prob": "ESPECIAL: 2%"}
-            })
+        self.store_packs.append({
+            "id": "wc_mega_pack", "name": "MEGASOBRE MUNDIAL 2026", "price": 75000, "price_points": 2500, "event": "WC", "cat": "PROMO", "type": "PACK",
+            "total_items": 57, "legend_chance": 0.05, "event_chance": 0.05, "color_tier": "ELITE", 
+            "details": {
+                "players": "47+3 Picks", "min_players": 47, "max_players": 47, "guaranteed": "3 PICKS + 47 WC", 
+                "prob": "ESPECIAL: 5% | PICKS: 20% ESP", "pick_count": 3, "pick_chance": 1.0, "pick_special_chance": 0.2,
+                "embedded_picks": [
+                    {"id": "wc_pick", "name": "PLAYER PICK MUNDIAL", "details": {"options": 3, "min_ovr": 80, "is_wc": True}}
+                ]
+            }
+        })
+        self.store_packs.append({
+            "id": "worldcup", "name": "SOBRE MUNDIAL 2026", "price": 35000, "price_points": 1500, "event": "WC", "cat": "PROMO", "type": "PACK",
+            "total_items": 12, "legend_chance": 0.02, "event_chance": 0.015, "color_tier": "ORO", "details": {"players": "12", "min_players": 12, "max_players": 12, "guaranteed": "ORO WC (82+)", "min_ovr": 82, "prob": "ESPECIAL: 2%"}
+        })
         
         # EVENTO FLASHBACK
-        from data.event_flashback import is_flashback_active
-        if is_flashback_active():
-            self.store_packs.append({
-                "id": "flashback_pack", "name": "SOBRE FLASHBACK", "price": 45000, "price_points": 1800, "event": "FLASHBACK", "cat": "PROMO", "type": "PACK",
-                "total_items": 12, "legend_chance": 0.02, "event_chance": 0.03, "color_tier": "ELITE", "details": {"players": 12, "guaranteed": "FLASHBACK (82+)"}
-            })
+        self.store_packs.append({
+            "id": "flashback_pack", "name": "SOBRE FLASHBACK", "price": 45000, "price_points": 1800, "event": "FLASHBACK", "cat": "PROMO", "type": "PACK",
+            "total_items": 12, "legend_chance": 0.02, "event_chance": 0.03, "color_tier": "ELITE", "details": {"players": 12, "guaranteed": "FLASHBACK (82+)"}
+        })
         
         self.has_claimed_founder_reward = False
         self.legend_pick_options = []

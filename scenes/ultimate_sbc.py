@@ -13,8 +13,7 @@ class SBCScene(MenuScene):
         # Forzar refresco para asegurar que los requisitos de SBC (Media) se basen en datos actualizados
         ultimate_manager.refresh_all_ovrs()
         if group == "PREMIUM":
-            from data.event_worldcup import is_event_active as _wc_active
-            self.categories = ["FUNDADOR", "EVENTOS"] if _wc_active() else ["FUNDADOR"]
+            self.categories = ["FUNDADOR", "EVENTOS"]
         else:
             self.categories = ["PAÍSES", "MEJORAS", "DIARIOS"]
             
