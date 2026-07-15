@@ -40,6 +40,7 @@ class EventTeaserScene(BaseScene):
         
         # Sincronización y estado de carga del modo Ultimate
         self.waiting_for_load = False
+        self.skip_teaser = not active  # Si el evento ya terminó, saltar teaser
         try:
             from systems.ultimate_manager import ultimate_manager
             # Si no se ha cargado ningún dato del club y no está intentando conectar actualmente, forzar carga de seguridad
@@ -47,6 +48,9 @@ class EventTeaserScene(BaseScene):
                 ultimate_manager.online_status = "CONNECTING"
                 import threading
                 threading.Thread(target=ultimate_manager.load_ultimate, daemon=True).start()
+            # Si debemos saltar el teaser, activar transición inmediata
+            if self.skip_teaser:
+                self.waiting_for_load = True
         except Exception as e:
             print(f"Error en sincronización de teaser: {e}")
         
