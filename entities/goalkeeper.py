@@ -320,23 +320,31 @@ class Goalkeeper:
         hx = px
         hy = cy - int(radius * 1.2)  # Position the head higher to avoid overlap
         
+        # Mismatching boot colors
+        boot_color_l = [(50, 255, 50), (255, 100, 0), (0, 220, 255), (255, 220, 0), (240, 240, 240)][num_val % 5]
+        boot_color_r = [(50, 255, 50), (255, 100, 0), (0, 220, 255), (255, 220, 0), (240, 240, 240)][(num_val + 1) % 5]
+
         # 1. Legs and Feet (GK stands in place mostly, slight bob, socks and boots)
         lx = px - int(radius * 0.3)
         rx = px + int(radius * 0.3)
         ly = cy + int(radius * 0.3)
         leg_len = int(radius * 0.6)
         
-        # Left leg
+        # Left leg & boot
         pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + leg_len // 2), 3)
         pygame.draw.line(surface, self.color, (lx, ly + leg_len // 2), (lx, ly + leg_len), 3)
         pygame.draw.line(surface, WHITE, (lx - 1, ly + leg_len // 2), (lx + 1, ly + leg_len // 2), 1)
-        pygame.draw.circle(surface, (40, 40, 40), (lx, ly + leg_len), 3)
+        # Left boot detail
+        pygame.draw.ellipse(surface, boot_color_l, (lx - 2, ly + leg_len - 2, 5, 4))
+        pygame.draw.rect(surface, (230, 230, 230), (lx - 1, ly + leg_len + 2, 3, 1)) # Studs
         
-        # Right leg
+        # Right leg & boot
         pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + leg_len // 2), 3)
         pygame.draw.line(surface, self.color, (rx, ly + leg_len // 2), (rx, ly + leg_len), 3)
         pygame.draw.line(surface, WHITE, (rx - 1, ly + leg_len // 2), (rx + 1, ly + leg_len // 2), 1)
-        pygame.draw.circle(surface, (40, 40, 40), (rx, ly + leg_len), 3)
+        # Right boot detail
+        pygame.draw.ellipse(surface, boot_color_r, (rx - 2, ly + leg_len - 2, 5, 4))
+        pygame.draw.rect(surface, (230, 230, 230), (rx - 1, ly + leg_len + 2, 3, 1)) # Studs
         
         # 2. Torso (GK Jersey)
         ty = cy - int(radius * 0.3)
@@ -344,10 +352,16 @@ class Goalkeeper:
         shirt_shadow = (max(0, self.color[0]-40), max(0, self.color[1]-40), max(0, self.color[2]-40))
         pygame.draw.rect(surface, shirt_shadow, (px, ty - torso_h//2, torso_w//2, torso_h), border_radius=3)
         
+        # Small Crest/Badge on GK Jersey
+        col_col = self.team_data.get("accent", WHITE) if hasattr(self, "team_data") and self.team_data else WHITE
+        crest_x = px - torso_w // 3
+        crest_y = ty - torso_h // 4
+        pygame.draw.circle(surface, col_col, (crest_x, crest_y), 2)
+        pygame.draw.circle(surface, WHITE, (crest_x, crest_y), 1)
+
         # Collar and accents
         col_w = max(4, torso_w // 3)
         col_h = max(2, torso_h // 4)
-        col_col = self.team_data.get("accent", WHITE) if hasattr(self, "team_data") and self.team_data else WHITE
         pygame.draw.polygon(surface, col_col, [(px - col_w//2, ty - torso_h//2), (px, ty - torso_h//2 + col_h), (px + col_w//2, ty - torso_h//2)])
         pygame.draw.rect(surface, BLACK, (px - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
         
@@ -405,9 +419,12 @@ class Goalkeeper:
         pygame.draw.line(surface, self.color, shoulder_r, sleeve_end_r, 3)
         pygame.draw.line(surface, skin_color, sleeve_end_r, glove_r, 3)
         
-        # Big gloves
+        # Detailed gloves
         pygame.draw.circle(surface, glove_color, glove_l, 4)
         pygame.draw.circle(surface, glove_color, glove_r, 4)
+        # Glove straps
+        pygame.draw.line(surface, WHITE, (glove_l[0] - 3, glove_l[1] + 1), (glove_l[0] + 3, glove_l[1] + 1), 2)
+        pygame.draw.line(surface, WHITE, (glove_r[0] - 3, glove_r[1] + 1), (glove_r[0] + 3, glove_r[1] + 1), 2)
         pygame.draw.circle(surface, BLACK, glove_l, 4, 1)
         pygame.draw.circle(surface, BLACK, glove_r, 4, 1)
 

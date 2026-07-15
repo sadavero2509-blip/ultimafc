@@ -1032,6 +1032,13 @@ class FieldPlayer:
             # Add shirting shadow for detail
             shirt_shadow = (max(0, self.color[0]-40), max(0, self.color[1]-40), max(0, self.color[2]-40))
             pygame.draw.polygon(surface, shirt_shadow, [(int(pt.x), int(pt.y)) for pt in [p2, p3, p4]], 0)
+            
+            # Small Crest on Tackle Jersey
+            tcx = int(torso_center.x + slide_dir.x * t_len * 0.4 + perp.x * t_wid * 0.4)
+            tcy = int(torso_center.y + slide_dir.y * t_len * 0.4 + perp.y * t_wid * 0.4)
+            pygame.draw.circle(surface, self.secondary, (tcx, tcy), 2)
+            pygame.draw.circle(surface, WHITE, (tcx, tcy), 1)
+
             pygame.draw.polygon(surface, BLACK, [(int(pt.x), int(pt.y)) for pt in [p1, p2, p3, p4]], 1)
             
             # Head: positioned forward along slide_dir
@@ -1068,14 +1075,22 @@ class FieldPlayer:
             leg_mid_l = leg_start_l + (leg_end_l - leg_start_l) * 0.5
             pygame.draw.line(surface, skin_color, (int(leg_start_l.x), int(leg_start_l.y)), (int(leg_mid_l.x), int(leg_mid_l.y)), 3)
             pygame.draw.line(surface, sock_color, (int(leg_mid_l.x), int(leg_mid_l.y)), (int(leg_end_l.x), int(leg_end_l.y)), 3)
-            pygame.draw.circle(surface, boot_color_l, (int(leg_end_l.x), int(leg_end_l.y)), 3)
+            
+            # Left boot detail in tackle
+            bt_x_l, bt_y_l = int(leg_end_l.x), int(leg_end_l.y)
+            pygame.draw.ellipse(surface, boot_color_l, (bt_x_l - 2, bt_y_l - 2, 5, 4))
+            pygame.draw.rect(surface, (230, 230, 230), (bt_x_l - 1, bt_y_l + 1, 3, 1)) # Studs
             
             leg_start_r = torso_center - slide_dir * t_len - perp * (t_wid * 0.5)
             leg_end_r = leg_start_r - slide_dir * (radius * 0.8)
             leg_mid_r = leg_start_r + (leg_end_r - leg_start_r) * 0.5
             pygame.draw.line(surface, skin_color, (int(leg_start_r.x), int(leg_start_r.y)), (int(leg_mid_r.x), int(leg_mid_r.y)), 3)
             pygame.draw.line(surface, sock_color, (int(leg_mid_r.x), int(leg_mid_r.y)), (int(leg_end_r.x), int(leg_end_r.y)), 3)
-            pygame.draw.circle(surface, boot_color_r, (int(leg_end_r.x), int(leg_end_r.y)), 3)
+            
+            # Right boot detail in tackle
+            bt_x_r, bt_y_r = int(leg_end_r.x), int(leg_end_r.y)
+            pygame.draw.ellipse(surface, boot_color_r, (bt_x_r - 2, bt_y_r - 2, 5, 4))
+            pygame.draw.rect(surface, (230, 230, 230), (bt_x_r - 1, bt_y_r + 1, 3, 1)) # Studs
         else:
             # Stand/Run/Celebrate details
             hx = cx
@@ -1093,22 +1108,54 @@ class FieldPlayer:
             # Left leg
             pygame.draw.line(surface, skin_color, (lx, ly), (lx, ly + leg_len // 2 + swing_l // 2), 4)
             pygame.draw.line(surface, sock_color, (lx, ly + leg_len // 2 + swing_l // 2), (lx, ly + leg_len + swing_l), 4)
-            pygame.draw.line(surface, WHITE, (lx - 2, ly + leg_len // 2 + swing_l // 2), (lx + 2, ly + leg_len // 2 + swing_l // 2), 1)
-            pygame.draw.circle(surface, boot_color_l, (lx, ly + leg_len + swing_l), 3)
-            pygame.draw.line(surface, (30, 30, 30), (lx - 2, ly + leg_len + swing_l + 1), (lx + 2, ly + leg_len + swing_l + 1), 1)
+            # Stripe on left sock
+            pygame.draw.line(surface, self.secondary, (lx - 2, ly + leg_len // 2 + swing_l // 2 + 1), (lx + 2, ly + leg_len // 2 + swing_l // 2 + 1), 1)
+            pygame.draw.line(surface, WHITE, (lx - 2, ly + leg_len // 2 + swing_l // 2 + 3), (lx + 2, ly + leg_len // 2 + swing_l // 2 + 3), 1)
+            
+            # Detailed left boot
+            flx, fly = lx, ly + leg_len + swing_l
+            facing_right = aim_dir.x >= 0
+            if facing_right:
+                pygame.draw.ellipse(surface, boot_color_l, (flx - 2, fly - 2, 6, 4))
+                pygame.draw.rect(surface, (230, 230, 230), (flx - 1, fly + 2, 4, 1)) # Studs
+                pygame.draw.line(surface, (255, 255, 255) if boot_color_l != (240, 240, 240) else (50, 50, 50), (flx, fly - 1), (flx + 2, fly - 1), 1) # Laces
+            else:
+                pygame.draw.ellipse(surface, boot_color_l, (flx - 4, fly - 2, 6, 4))
+                pygame.draw.rect(surface, (230, 230, 230), (flx - 3, fly + 2, 4, 1)) # Studs
+                pygame.draw.line(surface, (255, 255, 255) if boot_color_l != (240, 240, 240) else (50, 50, 50), (flx - 2, fly - 1), (flx, fly - 1), 1) # Laces
+            pygame.draw.line(surface, (30, 30, 30), (flx - 2, fly + 3, flx + 2, fly + 3), 1)
             
             # Right leg
             pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + leg_len // 2 + swing_r // 2), 4)
             pygame.draw.line(surface, sock_color, (rx, ly + leg_len // 2 + swing_r // 2), (rx, ly + leg_len + swing_r), 4)
-            pygame.draw.line(surface, WHITE, (rx - 2, ly + leg_len // 2 + swing_r // 2), (rx + 2, ly + leg_len // 2 + swing_r // 2), 1)
-            pygame.draw.circle(surface, boot_color_r, (rx, ly + leg_len + swing_r), 3)
-            pygame.draw.line(surface, (30, 30, 30), (rx - 2, ly + leg_len + swing_r + 1), (rx + 2, ly + leg_len + swing_r + 1), 1)
+            # Stripe on right sock
+            pygame.draw.line(surface, self.secondary, (rx - 2, ly + leg_len // 2 + swing_r // 2 + 1), (rx + 2, ly + leg_len // 2 + swing_r // 2 + 1), 1)
+            pygame.draw.line(surface, WHITE, (rx - 2, ly + leg_len // 2 + swing_r // 2 + 3), (rx + 2, ly + leg_len // 2 + swing_r // 2 + 3), 1)
+            
+            # Detailed right boot
+            frx, fry = rx, ly + leg_len + swing_r
+            if facing_right:
+                pygame.draw.ellipse(surface, boot_color_r, (frx - 2, fry - 2, 6, 4))
+                pygame.draw.rect(surface, (230, 230, 230), (frx - 1, fry + 2, 4, 1)) # Studs
+                pygame.draw.line(surface, (255, 255, 255) if boot_color_r != (240, 240, 240) else (50, 50, 50), (frx, fry - 1), (frx + 2, fry - 1), 1) # Laces
+            else:
+                pygame.draw.ellipse(surface, boot_color_r, (frx - 4, fry - 2, 6, 4))
+                pygame.draw.rect(surface, (230, 230, 230), (frx - 3, fry + 2, 4, 1)) # Studs
+                pygame.draw.line(surface, (255, 255, 255) if boot_color_r != (240, 240, 240) else (50, 50, 50), (frx - 2, fry - 1), (frx, fry - 1), 1) # Laces
+            pygame.draw.line(surface, (30, 30, 30), (frx - 2, fry + 3, frx + 2, fry + 3), 1)
             
             # 2. Torso (Shirt)
             ty = cy - int(radius * 0.3)
             pygame.draw.rect(surface, self.color, (cx - torso_w//2, ty - torso_h//2, torso_w, torso_h), border_radius=3)
             shirt_shadow = (max(0, self.color[0]-40), max(0, self.color[1]-40), max(0, self.color[2]-40))
             pygame.draw.rect(surface, shirt_shadow, (cx, ty - torso_h//2, torso_w//2, torso_h), border_radius=3)
+            
+            # Small Crest/Badge on Left Chest
+            crest_x = cx - torso_w // 3
+            crest_y = ty - torso_h // 4
+            pygame.draw.circle(surface, self.secondary, (crest_x, crest_y), 2)
+            pygame.draw.circle(surface, WHITE, (crest_x, crest_y), 1)
+
             pygame.draw.rect(surface, BLACK, (cx - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
             
             # 3. Uniform stripe/accent & Collar
@@ -1152,7 +1199,7 @@ class FieldPlayer:
             if num_val % 7 == 0:  # Headband
                 pygame.draw.line(surface, self.secondary, (hx - head_r + 1, hy - head_r + 4), (hx + head_r - 1, hy - head_r + 4), 2)
             
-            # 6. Arms & Sleeves
+            # 6. Arms & Sleeves & Wristbands
             lax = cx - torso_w//2 - 1
             lay = ty - torso_h//4
             rax = cx + torso_w//2 + 1
@@ -1165,7 +1212,7 @@ class FieldPlayer:
                 pygame.draw.line(surface, self.color, sh_l, sl_l, 3)
                 pygame.draw.line(surface, skin_color, sl_l, hd_l, 3)
                 pygame.draw.circle(surface, skin_color, hd_l, 3)
-
+ 
                 sh_r = (rax, ray)
                 hd_r = (rax + 4, ray - int(radius * 0.8))
                 sl_r = (rax + int((hd_r[0] - rax) * 0.45), ray + int((hd_r[1] - ray) * 0.45))
@@ -1187,6 +1234,10 @@ class FieldPlayer:
                 sl_l = (lax + int((hd_l[0] - lax) * 0.45), lay + int((hd_l[1] - lay) * 0.45))
                 pygame.draw.line(surface, self.color, sh_l, sl_l, 3)
                 pygame.draw.line(surface, skin_color, sl_l, hd_l, 3)
+                # Left wristband
+                if num_val % 3 == 0:
+                    wrist_l = (sl_l[0] + int((hd_l[0] - sl_l[0]) * 0.6), sl_l[1] + int((hd_l[1] - sl_l[1]) * 0.6))
+                    pygame.draw.circle(surface, WHITE, wrist_l, 2)
                 pygame.draw.circle(surface, skin_color, hd_l, 2.5)
                 
                 sh_r = (rax, ray)
@@ -1194,8 +1245,12 @@ class FieldPlayer:
                 sl_r = (rax + int((hd_r[0] - rax) * 0.45), ray + int((hd_r[1] - ray) * 0.45))
                 pygame.draw.line(surface, self.color, sh_r, sl_r, 3)
                 pygame.draw.line(surface, skin_color, sl_r, hd_r, 3)
+                # Right wristband
+                if num_val % 3 == 0:
+                    wrist_r = (sl_r[0] + int((hd_r[0] - sl_r[0]) * 0.6), sl_r[1] + int((hd_r[1] - sl_r[1]) * 0.6))
+                    pygame.draw.circle(surface, WHITE, wrist_r, 2)
                 pygame.draw.circle(surface, skin_color, hd_r, 2.5)
-
+ 
             # 7. Eyes, Eyebrows & Mouth
             blink = (math.sin(now * 3.0 + phase) + 1.0) / 2.0
             eye_open = 1.0 if blink > 0.12 else 0.15
@@ -1227,7 +1282,7 @@ class FieldPlayer:
                 pygame.draw.circle(surface, (180, 50, 50), (int(m_x), int(m_y)), 2)
             else:
                 pygame.draw.line(surface, (100, 50, 50), (int(m_x - perp_eye.x*2), int(m_y - perp_eye.y*2)), (int(m_x + perp_eye.x*2), int(m_y + perp_eye.y*2)), 1)
-
+ 
         # Celebración: anillo + chispas simples
         if celebrate:
             pulse = 0.5 + 0.5 * math.sin(now * 12.0 + phase)
@@ -1236,7 +1291,7 @@ class FieldPlayer:
             s = int(radius * 0.6)
             pygame.draw.line(surface, YELLOW, (cx - s, cy), (cx + s, cy), 2)
             pygame.draw.line(surface, YELLOW, (cx, cy - s), (cx, cy + s), 2)
-
+ 
         # --- BRAZALETE DE CAPITAN (visible siempre, en el brazo izquierdo) ---
         if self.player_data.get("is_captain") and not tackle_active:
             # Brazalete dorado en el brazo izquierdo
@@ -1250,7 +1305,7 @@ class FieldPlayer:
             pygame.draw.line(surface, GOLD, (lax_cap - 5, arm_mid_y - 1), (lax_cap + 1, arm_mid_y - 1), 3)
             pygame.draw.line(surface, GOLD, (lax_cap - 5, arm_mid_y + 1), (lax_cap + 1, arm_mid_y + 1), 3)
             pygame.draw.line(surface, (255, 255, 100), (lax_cap - 5, arm_mid_y), (lax_cap + 1, arm_mid_y), 2)
-
+ 
         # Indicador de jugador controlado
         if self.is_controlled:
             tri_y = cy - radius - 12
@@ -1265,7 +1320,7 @@ class FieldPlayer:
             name_str = self.player_data["name"]
             name_surf = font_n.render(name_str, True, WHITE)
             surface.blit(name_surf, (cx - name_surf.get_width() // 2, cy + radius + 15))
-
+ 
             # --- BARRA DE STAMINA (Solo para el controlado) ---
             stamina_w = 40
             stamina_h = 4
@@ -1285,10 +1340,15 @@ class FieldPlayer:
             # Borde
             pygame.draw.rect(surface, (0, 0, 0), (sx, sy, stamina_w, stamina_h), 1)
         else:
-            # Dibujar número de dorsal en la camiseta
+            # Dibujar número de dorsal en la camiseta con contorno negro
             try: font_num = pygame.font.SysFont("Arial", 10, bold=True)
             except: font_num = pygame.font.Font(None, 10)
             num_str = str(self.player_data.get("num", ""))
+            
+            num_surf_shadow = font_num.render(num_str, True, BLACK)
+            for dx, dy in [(-1, -1), (1, -1), (-1, 1), (1, 1), (0, -1), (0, 1), (-1, 0), (1, 0)]:
+                surface.blit(num_surf_shadow, (cx - num_surf_shadow.get_width() // 2 + dx, cy - num_surf_shadow.get_height() // 2 + dy))
+                
             num_surf = font_num.render(num_str, True, self.team_data["accent"])
             surface.blit(num_surf, (cx - num_surf.get_width() // 2, cy - num_surf.get_height() // 2))
             

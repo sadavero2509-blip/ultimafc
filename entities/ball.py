@@ -1,4 +1,5 @@
 import pygame
+import math
 from settings import *
 
 
@@ -16,6 +17,7 @@ class Ball:
         self.z = 0                  # Altura (z-axis)
         self.vz = 0                 # Velocidad vertical
         self.is_through_pass = False
+        self.rotation_angle = 0.0
 
     def reset(self, x, y):
         """Reposiciona el balón para saque central."""
@@ -29,6 +31,7 @@ class Ball:
         self.z = 0
         self.vz = 0
         self.is_through_pass = False
+        self.rotation_angle = 0.0
 
 
     def update(self, dt, pitch_rect, left_goal_rect, right_goal_rect):
@@ -51,6 +54,11 @@ class Ball:
         # Mover por inercia
         self.pos += self.vel * dt
         
+        # Actualizar rotación del balón en base a la velocidad
+        speed = self.vel.length()
+        if speed > 0:
+            self.rotation_angle = (self.rotation_angle + (speed * dt) / max(1.0, self.radius)) % (2 * math.pi)
+        
         # ── Física Z (Altura) ──
         if self.z > 0 or self.vz > 0:
             self.z += self.vz * dt
@@ -60,6 +68,7 @@ class Ball:
                 self.vz *= -0.4 # Rebote amortiguado
                 if abs(self.vz) < 50: self.vz = 0
                 self.vel *= 0.7 # Pierde inercia al rebotar
+ 
 
         # Aplicar fricción solo si no es un pase magnético y está en el suelo
         if not self.target_player:
@@ -127,13 +136,45 @@ class Ball:
         visual_radius = int(self.radius * (1.0 + self.z / 400))
         draw_y = py - int(self.z)
         
+        # Color base blanco
         pygame.draw.circle(surface, WHITE, (px, draw_y), visual_radius)
-        # Patrón de pentagono del balón
-        pygame.draw.circle(surface, (200, 200, 200), (px, draw_y), visual_radius, 1)
-        # Cruz interior
-        inner = visual_radius // 2
-        pygame.draw.line(surface, (180, 180, 180), (px - inner, draw_y), (px + inner, draw_y), 1)
-        pygame.draw.line(surface, (180, 180, 180), (px, draw_y - inner), (px, draw_y + inner), 1)
-        # Borde
+        
+        # Patrón detallado de pentágono de balón de fútbol giratorio
+        pent_r = max(1.5, visual_radius * 0.35)
+        pent_pts = []
+        for i in range(5):
+            a = self.rotation_angle + i * (2 * math.pi / 5)
+            pt_x = px + int(math.cos(a) * pent_r)
+            pt_y = draw_y + int(math.sin(a) * pent_r)
+            pent_pts.append((pt_x, pt_y))
+            
+        # Pentagono central
+        pygame.draw.polygon(surface, (30, 30, 30), pent_pts)
+        pygame.draw.polygon(surface, BLACK, pent_pts, 1)
+        
+        # Paneles y líneas radiales
+        for i in range(5):
+            a = self.rotation_angle + i * (2 * math.pi / 5)
+            start_x = px + int(math.cos(a) * pent_r)
+            start_y = draw_y + int(math.sin(a) * pent_r)
+            
+            # Línea de unión del panel
+            end_x = px + int(math.cos(a) * visual_radius)
+            end_y = draw_y + int(math.sin(a) * visual_radius)
+            pygame.draw.line(surface, (80, 80, 80), (start_x, start_y), (end_x, end_y), 1)
+            
+            # Paneles externos secundarios (pequeños triángulos/pentágonos en los bordes)
+            sub_a1 = a - 0.22
+            sub_a2 = a + 0.22
+            mid_r = pent_r + (visual_radius - pent_r) * 0.6
+            out_pts = [
+                (start_x, start_y),
+                (px + int(math.cos(sub_a1) * mid_r), draw_y + int(math.sin(sub_a1) * mid_r)),
+                (px + int(math.cos(sub_a2) * mid_r), draw_y + int(math.sin(sub_a2) * mid_r))
+            ]
+            pygame.draw.polygon(surface, (40, 40, 40), out_pts)
+            pygame.draw.polygon(surface, BLACK, out_pts, 1)
+
+        # Borde exterior del balón
         pygame.draw.circle(surface, BLACK, (px, draw_y), visual_radius, 1)
 
