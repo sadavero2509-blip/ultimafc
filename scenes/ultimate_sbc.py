@@ -45,8 +45,9 @@ class SBCScene(MenuScene):
         
         # 2. PREMIUM - EVENTOS
         from data.event_worldcup import is_event_active
-        self.sbcs_events = [
-            {
+        self.sbcs_events = []
+        if is_event_active():
+            self.sbcs_events.append({
                 "id": "pele_wc", "name": "SBC: PELÉ MUNDIALISTA", "cat": "EVENTOS",
                 "desc": "Intercambia a O Rei (90+) y una plantilla galáctica por su versión WC.",
                 "reqs": [
@@ -55,9 +56,8 @@ class SBCScene(MenuScene):
                     {"type": "total", "value": "Jugadores", "count": 11}
                 ],
                 "reward_type": "player", "reward_data": "pele_wc", "completed": False,
-                "locked": not is_event_active()
-            }
-        ]
+                "locked": False
+            })
 
         # 3. FUNDAMENTOS - PAÍSES
         self.sbcs_countries = [
@@ -104,7 +104,10 @@ class SBCScene(MenuScene):
         elif cat == "PAÍSES": self.current_sbcs = self.sbcs_countries
         elif cat == "MEJORAS": self.current_sbcs = self.sbcs_upgrades
         else: self.current_sbcs = self.sbcs_daily
-        self.selected_idx = min(self.selected_idx, len(self.current_sbcs)-1)
+        if len(self.current_sbcs) > 0:
+            self.selected_idx = max(0, min(self.selected_idx, len(self.current_sbcs)-1))
+        else:
+            self.selected_idx = 0
 
     def draw(self, screen):
         screen.fill((10, 15, 30))
@@ -411,11 +414,11 @@ class SBCScene(MenuScene):
                 if event.key == pygame.K_ESCAPE:
                     from .ultimate_hub import UltimateHubScene
                     self.manager.transition_to(UltimateHubScene)
-                elif event.key == pygame.K_UP: self.selected_idx = max(0, self.selected_idx - 1)
-                elif event.key == pygame.K_DOWN: self.selected_idx = min(len(self.current_sbcs)-1, self.selected_idx + 1)
+                elif event.key == pygame.K_UP and len(self.current_sbcs) > 0: self.selected_idx = max(0, self.selected_idx - 1)
+                elif event.key == pygame.K_DOWN and len(self.current_sbcs) > 0: self.selected_idx = min(len(self.current_sbcs)-1, self.selected_idx + 1)
                 elif event.key == pygame.K_q: self.cat_idx = (self.cat_idx - 1) % len(self.categories); self._refresh_current_list()
                 elif event.key == pygame.K_e: self.cat_idx = (self.cat_idx + 1) % len(self.categories); self._refresh_current_list()
-                elif event.key == pygame.K_RETURN:
+                elif event.key == pygame.K_RETURN and len(self.current_sbcs) > 0:
                     sbc = self.current_sbcs[self.selected_idx]
                     if sbc.get("locked"):
                         self.msg = "ESTE DESAFÍO AÚN NO ESTÁ DISPONIBLE"
