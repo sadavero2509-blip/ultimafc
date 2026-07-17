@@ -1127,7 +1127,7 @@ class FieldPlayer:
                 pygame.draw.ellipse(surface, boot_color_l, (flx - 4, fly - 2, 6, 4))
                 pygame.draw.rect(surface, (230, 230, 230), (flx - 3, fly + 2, 4, 1)) # Studs
                 pygame.draw.line(surface, (255, 255, 255) if boot_color_l != (240, 240, 240) else (50, 50, 50), (flx - 2, fly - 1), (flx, fly - 1), 1) # Laces
-            pygame.draw.line(surface, (30, 30, 30), (flx - 2, fly + 3, flx + 2, fly + 3), 1)
+            pygame.draw.line(surface, (30, 30, 30), (flx - 2, fly + 3), (flx + 2, fly + 3), 1)
             
             # Right leg
             pygame.draw.line(surface, skin_color, (rx, ly), (rx, ly + leg_len // 2 + swing_r // 2), 4)
