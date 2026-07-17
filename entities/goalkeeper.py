@@ -365,12 +365,25 @@ class Goalkeeper:
         pygame.draw.polygon(surface, col_col, [(px - col_w//2, ty - torso_h//2), (px, ty - torso_h//2 + col_h), (px + col_w//2, ty - torso_h//2)])
         pygame.draw.rect(surface, BLACK, (px - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
         
+        # Patrocinador en el pecho del portero
+        try: font_tiny = pygame.font.SysFont("Arial", 8, bold=True)
+        except: font_tiny = pygame.font.Font(None, 8)
+        sponsor_col = col_col if col_col != self.color else WHITE
+        sponsor_surf = font_tiny.render("NEO", True, sponsor_col)
+        surface.blit(sponsor_surf, (px - sponsor_surf.get_width() // 2, ty + 1))
+        
         # 3. Shorts
         shorts_y = ty + torso_h//2 - 1
         shorts_h = int(radius * 0.45)
         pygame.draw.rect(surface, (30, 30, 35), (px - torso_w//2, shorts_y, torso_w, shorts_h), border_radius=1)
         pygame.draw.rect(surface, (20, 20, 23), (px, shorts_y, torso_w//2, shorts_h), border_radius=1)
         pygame.draw.rect(surface, BLACK, (px - torso_w//2, shorts_y, torso_w, shorts_h), 1, border_radius=1)
+        
+        # Número en el pantalón del portero
+        try: font_short = pygame.font.SysFont("Arial", 7)
+        except: font_short = pygame.font.Font(None, 7)
+        sh_num_surf = font_short.render(str(num_val), True, (180, 180, 180))
+        surface.blit(sh_num_surf, (px - torso_w // 3, shorts_y + 1))
         
         # 4. Head & Hair
         pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
@@ -410,6 +423,8 @@ class Goalkeeper:
         glove_l = (lax - 3, left_arm_y)
         sleeve_end_l = (lax + int((glove_l[0] - lax) * 0.45), lay + int((glove_l[1] - lay) * 0.45))
         pygame.draw.line(surface, self.color, shoulder_l, sleeve_end_l, 3)
+        # Sleeve cuff left
+        pygame.draw.circle(surface, col_col, sleeve_end_l, 2)
         pygame.draw.line(surface, skin_color, sleeve_end_l, glove_l, 3)
         
         # Right arm with sleeve
@@ -417,6 +432,8 @@ class Goalkeeper:
         glove_r = (rax + 3, right_arm_y)
         sleeve_end_r = (rax + int((glove_r[0] - rax) * 0.45), ray + int((glove_r[1] - ray) * 0.45))
         pygame.draw.line(surface, self.color, shoulder_r, sleeve_end_r, 3)
+        # Sleeve cuff right
+        pygame.draw.circle(surface, col_col, sleeve_end_r, 2)
         pygame.draw.line(surface, skin_color, sleeve_end_r, glove_r, 3)
         
         # Detailed gloves
@@ -456,6 +473,10 @@ class Goalkeeper:
         m_x = hx + int(gk_aim.x * head_r * 0.4)
         m_y = hy + int(head_r * 0.35)
         pygame.draw.line(surface, (100, 50, 50), (int(m_x - perp.x*2), int(m_y - perp.y*2)), (int(m_x + perp.x*2), int(m_y + perp.y*2)), 1)
+        # Facial stubble/beard
+        if num_val % 3 == 0:
+            beard_color = (60, 50, 45) if skin_color != (120, 80, 55) else (40, 25, 15)
+            pygame.draw.arc(surface, beard_color, (hx - head_r + 1, hy - 1, (head_r - 1) * 2, head_r), 3.14, 6.28, 2)
 
         # Indicador de jugador controlado
         if self.is_controlled:

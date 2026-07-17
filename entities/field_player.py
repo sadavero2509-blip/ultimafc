@@ -1048,6 +1048,10 @@ class FieldPlayer:
             pygame.draw.circle(surface, skin_shadow, (hx + 1, hy + 1), head_r - 1)
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r - 1)
             pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
+            # Facial hair in tackle
+            if num_val % 3 == 0:
+                beard_color = (60, 50, 45) if skin_color != (120, 80, 55) else (40, 25, 15)
+                pygame.draw.arc(surface, beard_color, (hx - head_r + 1, hy - 1, (head_r - 1) * 2, head_r), 3.14, 6.28, 2)
             
             # Hair for tackle
             if hair_style == 0:
@@ -1166,6 +1170,13 @@ class FieldPlayer:
             pygame.draw.polygon(surface, self.secondary, [(cx - col_w//2, ty - torso_h//2), (cx, ty - torso_h//2 + col_h), (cx + col_w//2, ty - torso_h//2)])
             pygame.draw.rect(surface, BLACK, (cx - torso_w//2, ty - torso_h//2, torso_w, torso_h), 1, border_radius=3)
             
+            # Patrocinador en el pecho
+            try: font_tiny = pygame.font.SysFont("Arial", 8, bold=True)
+            except: font_tiny = pygame.font.Font(None, 8)
+            sponsor_col = self.secondary if self.secondary != self.color else WHITE
+            sponsor_surf = font_tiny.render("NEO", True, sponsor_col)
+            surface.blit(sponsor_surf, (cx - sponsor_surf.get_width() // 2, ty + 1))
+            
             # 4. Shorts
             shorts_y = ty + torso_h//2 - 1
             shorts_h = int(radius * 0.45)
@@ -1173,6 +1184,12 @@ class FieldPlayer:
             shorts_shadow = (max(0, self.secondary[0]-40), max(0, self.secondary[1]-40), max(0, self.secondary[2]-40))
             pygame.draw.rect(surface, shorts_shadow, (cx, shorts_y, torso_w//2, shorts_h), border_radius=1)
             pygame.draw.rect(surface, BLACK, (cx - torso_w//2, shorts_y, torso_w, shorts_h), 1, border_radius=1)
+            
+            # Número en el pantalón (pierna derecha, lado izquierdo en pantalla)
+            try: font_short = pygame.font.SysFont("Arial", 7)
+            except: font_short = pygame.font.Font(None, 7)
+            sh_num_surf = font_short.render(str(num_val), True, self.color if self.color != self.secondary else WHITE)
+            surface.blit(sh_num_surf, (cx - torso_w // 3, shorts_y + 1))
             
             # 5. Head & Hair
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
@@ -1234,6 +1251,8 @@ class FieldPlayer:
                 sl_l = (lax + int((hd_l[0] - lax) * 0.45), lay + int((hd_l[1] - lay) * 0.45))
                 pygame.draw.line(surface, self.color, sh_l, sl_l, 3)
                 pygame.draw.line(surface, skin_color, sl_l, hd_l, 3)
+                # Sleeve cuff left
+                pygame.draw.circle(surface, self.secondary, sl_l, 2)
                 # Left wristband
                 if num_val % 3 == 0:
                     wrist_l = (sl_l[0] + int((hd_l[0] - sl_l[0]) * 0.6), sl_l[1] + int((hd_l[1] - sl_l[1]) * 0.6))
@@ -1245,6 +1264,8 @@ class FieldPlayer:
                 sl_r = (rax + int((hd_r[0] - rax) * 0.45), ray + int((hd_r[1] - ray) * 0.45))
                 pygame.draw.line(surface, self.color, sh_r, sl_r, 3)
                 pygame.draw.line(surface, skin_color, sl_r, hd_r, 3)
+                # Sleeve cuff right
+                pygame.draw.circle(surface, self.secondary, sl_r, 2)
                 # Right wristband
                 if num_val % 3 == 0:
                     wrist_r = (sl_r[0] + int((hd_r[0] - sl_r[0]) * 0.6), sl_r[1] + int((hd_r[1] - sl_r[1]) * 0.6))
@@ -1282,6 +1303,10 @@ class FieldPlayer:
                 pygame.draw.circle(surface, (180, 50, 50), (int(m_x), int(m_y)), 2)
             else:
                 pygame.draw.line(surface, (100, 50, 50), (int(m_x - perp_eye.x*2), int(m_y - perp_eye.y*2)), (int(m_x + perp_eye.x*2), int(m_y + perp_eye.y*2)), 1)
+            # Facial stubble/beard
+            if num_val % 3 == 0:
+                beard_color = (60, 50, 45) if skin_color != (120, 80, 55) else (40, 25, 15)
+                pygame.draw.arc(surface, beard_color, (hx - head_r + 1, hy - 1, (head_r - 1) * 2, head_r), 3.14, 6.28, 2)
  
         # Celebración: anillo + chispas simples
         if celebrate:
@@ -1305,6 +1330,10 @@ class FieldPlayer:
             pygame.draw.line(surface, GOLD, (lax_cap - 5, arm_mid_y - 1), (lax_cap + 1, arm_mid_y - 1), 3)
             pygame.draw.line(surface, GOLD, (lax_cap - 5, arm_mid_y + 1), (lax_cap + 1, arm_mid_y + 1), 3)
             pygame.draw.line(surface, (255, 255, 100), (lax_cap - 5, arm_mid_y), (lax_cap + 1, arm_mid_y), 2)
+            try: font_cap = pygame.font.SysFont("Arial", 6, bold=True)
+            except: font_cap = pygame.font.Font(None, 6)
+            c_surf = font_cap.render("C", True, BLACK)
+            surface.blit(c_surf, (lax_cap - 3, arm_mid_y - 3))
  
         # Indicador de jugador controlado
         if self.is_controlled:
