@@ -45,27 +45,27 @@ UI_TEXT_DIM = (140, 140, 160)
 
 # Física base (Rebalanceado v1.1 – Ritmo más pausado, defensas fuertes)
 FRICTION = 0.983         # Más fricción → balón se frena antes
-BALL_RADIUS = 5          
-PLAYER_RADIUS = 9       
+BALL_RADIUS = 7          
+PLAYER_RADIUS = 13       
 
-PLAYER_SPEED = 56        # Reducido (66→56) para ritmo más realista en campo más grande
-DASH_MULTIPLIER = 1.60   # Sprint menos exagerado (1.72→1.60)
-KICK_FORCE = 720         # Tiros ligeramente más lentos (780→720)
-PASS_FORCE = 480         # Pases más pausados (520→480)
-PASS_COOLDOWN = 0.35     # Ligeramente más cooldown entre pases
-MAGNET_DIST = 16         # Magnetismo reducido (18→16)
+PLAYER_SPEED = 75        # Escala ajustada para campo más grande (56→75)
+DASH_MULTIPLIER = 1.60   # Sprint menos exagerado
+KICK_FORCE = 900         # Tiros ajustados (720→900)
+PASS_FORCE = 600         # Pases ajustados (480→600)
+PASS_COOLDOWN = 0.35     
+MAGNET_DIST = 20         # Rango de posesión ampliado para igualar tamaños (16→20)
 
 # Cooldowns y Robos
-TACKLE_BOOST = 170       # Velocidad de tackle (180→170)
+TACKLE_BOOST = 220       # Velocidad de tackle (170→220)
 TACKLE_DURATION = 0.5    
 
 # IA
-AI_SPEED = 54            # IA base reducida (58→54)
-AI_CHASE_RADIUS = 220    # Rango de persecución ampliado (200→220)
-AI_POSITION_JITTER = 12  # Menos jitter para posicionamiento más limpio
-GK_SPEED = 70            # Portero más rápido (65→70) – refuerzo defensivo
-GK_DIVE_SPEED = 185      # Portero se lanza más rápido (160→185)
-GK_REACT_DIST = 75       # Portero reacciona desde más lejos (60→75)
+AI_SPEED = 72            # IA ajustada (54→72)
+AI_CHASE_RADIUS = 300    # Rango de persecución ampliado (220→300)
+AI_POSITION_JITTER = 12  
+GK_SPEED = 90            # Portero ajustado (70→90)
+GK_DIVE_SPEED = 240      # Portero se lanza más rápido (185→240)
+GK_REACT_DIST = 100      # Portero reacciona desde más lejos (75→100)
 
 # Partido
 MATCH_DURATION = 180     # Duración en segundos (3 minutos)

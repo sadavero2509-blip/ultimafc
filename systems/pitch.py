@@ -6,13 +6,15 @@ class Pitch:
     def __init__(self, surface):
         self.surface = surface
 
-        # Dimensiones de campo relativas a la ventana (dejando margen)
-        self.margin = 35  # Reducido (50→35) para campo más grande
-        self.width = WIDTH - self.margin * 2
-        self.height = HEIGHT - self.margin * 2
+        # Dimensiones de campo aumentadas
+        self.margin = 80  
+        self.width = 1920
+        self.height = 1080
+        self.world_width = self.width + self.margin * 2
+        self.world_height = self.height + self.margin * 2
         self.rect = pygame.Rect(self.margin, self.margin, self.width, self.height)
 
-        self.center = (WIDTH // 2, HEIGHT // 2)
+        self.center = self.rect.center
 
         # ── Rectángulos de portería (para detección de gol) ──
         goal_width = 14
@@ -24,36 +26,36 @@ class Pitch:
             goal_height
         )
         self.right_goal_rect = pygame.Rect(
-            WIDTH - self.margin,
+            self.world_width - self.margin,
             self.center[1] - goal_height // 2,
             goal_width,
             goal_height
         )
 
-        # Áreas grandes y pequeñas proporcionadas al nuevo zoom
+        # Áreas grandes y pequeñas
         self.left_area = pygame.Rect(self.margin, self.center[1] - 100, 100, 200)
         self.left_small_area = pygame.Rect(self.margin, self.center[1] - 40, 40, 80)
-        self.right_area = pygame.Rect(WIDTH - self.margin - 100, self.center[1] - 100, 100, 200)
-        self.right_small_area = pygame.Rect(WIDTH - self.margin - 40, self.center[1] - 40, 40, 80)
+        self.right_area = pygame.Rect(self.world_width - self.margin - 100, self.center[1] - 100, 100, 200)
+        self.right_small_area = pygame.Rect(self.world_width - self.margin - 40, self.center[1] - 40, 40, 80)
 
-        # ── Generar Público ──
+        # ── Generar Público (Aumentado para mayor densidad en el nuevo perímetro) ──
         import random
         self.crowd_particles = []
         colors = [(200, 50, 50), (50, 100, 200), (200, 200, 200), (250, 200, 50), (50, 200, 100), (100, 50, 150)]
-        for _ in range(1200):
+        for _ in range(2000):
             margin_choice = random.choice(["top", "bottom", "left", "right"])
             if margin_choice == "top":
-                x = random.randint(0, WIDTH)
+                x = random.randint(0, self.world_width)
                 y = random.randint(0, self.margin - 5)
             elif margin_choice == "bottom":
-                x = random.randint(0, WIDTH)
-                y = random.randint(HEIGHT - self.margin + 5, HEIGHT)
+                x = random.randint(0, self.world_width)
+                y = random.randint(self.world_height - self.margin + 5, self.world_height)
             elif margin_choice == "left":
                 x = random.randint(0, self.margin - 5)
-                y = random.randint(0, HEIGHT)
+                y = random.randint(0, self.world_height)
             else:
-                x = random.randint(WIDTH - self.margin + 5, WIDTH)
-                y = random.randint(0, HEIGHT)
+                x = random.randint(self.world_width - self.margin + 5, self.world_width)
+                y = random.randint(0, self.world_height)
                 
             # Evitar dibujar público justo detrás de las porterías
             if margin_choice in ["left", "right"]:
@@ -90,10 +92,10 @@ class Pitch:
 
         # ── Gradas y Público ──
         # Fondo de gradas oscuras
-        pygame.draw.rect(self.surface, (20, 20, 25), (0, 0, WIDTH, self.margin))
-        pygame.draw.rect(self.surface, (20, 20, 25), (0, HEIGHT - self.margin, WIDTH, self.margin))
-        pygame.draw.rect(self.surface, (20, 20, 25), (0, 0, self.margin, HEIGHT))
-        pygame.draw.rect(self.surface, (20, 20, 25), (WIDTH - self.margin, 0, self.margin, HEIGHT))
+        pygame.draw.rect(self.surface, (20, 20, 25), (0, 0, self.world_width, self.margin))
+        pygame.draw.rect(self.surface, (20, 20, 25), (0, self.world_height - self.margin, self.world_width, self.margin))
+        pygame.draw.rect(self.surface, (20, 20, 25), (0, 0, self.margin, self.world_height))
+        pygame.draw.rect(self.surface, (20, 20, 25), (self.world_width - self.margin, 0, self.margin, self.world_height))
 
         # Dibujar público animado
         import math
@@ -109,7 +111,7 @@ class Pitch:
         # Línea central
         pygame.draw.line(self.surface, WHITE,
                          (self.center[0], self.margin),
-                         (self.center[0], HEIGHT - self.margin), 3)
+                         (self.center[0], self.world_height - self.margin), 3)
 
         # Círculo central proporcionado
         pygame.draw.circle(self.surface, WHITE, self.center, 52, 3)
@@ -127,7 +129,7 @@ class Pitch:
         pygame.draw.rect(self.surface, WHITE, self.right_small_area, 3)
         # Punto penal derecho
         pygame.draw.circle(self.surface, WHITE,
-                           (WIDTH - self.margin - 70, self.center[1]), 3)
+                           (self.world_width - self.margin - 70, self.center[1]), 3)
 
         # ── Porterías ──
         # Red de portería (fondo de la portería)
@@ -163,16 +165,16 @@ class Pitch:
                         -1.5708, 0, 2)
         # Esquina inferior izquierda
         pygame.draw.arc(self.surface, WHITE,
-                        (self.margin - corner_radius, HEIGHT - self.margin - corner_radius,
+                        (self.margin - corner_radius, self.world_height - self.margin - corner_radius,
                          corner_radius * 2, corner_radius * 2),
                         0, 1.5708, 2)
         # Esquina superior derecha
         pygame.draw.arc(self.surface, WHITE,
-                        (WIDTH - self.margin - corner_radius, self.margin - corner_radius,
+                        (self.world_width - self.margin - corner_radius, self.margin - corner_radius,
                          corner_radius * 2, corner_radius * 2),
                         3.1416, 4.7124, 2)
         # Esquina inferior derecha
         pygame.draw.arc(self.surface, WHITE,
-                        (WIDTH - self.margin - corner_radius, HEIGHT - self.margin - corner_radius,
+                        (self.world_width - self.margin - corner_radius, self.world_height - self.margin - corner_radius,
                          corner_radius * 2, corner_radius * 2),
                         1.5708, 3.1416, 2)

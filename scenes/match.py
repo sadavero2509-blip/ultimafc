@@ -61,7 +61,7 @@ class MatchScene(BaseScene):
                 if state["left_team"] == self.user_team: self.user_side = "left"
                 else: self.user_side = "right"
 
-            self.ball = Ball(WIDTH // 2, HEIGHT // 2)
+            self.ball = Ball(self.pitch.center[0], self.pitch.center[1])
             
             from systems.audio_manager import audio_manager
             audio_manager.stop_menu_music()
@@ -102,7 +102,7 @@ class MatchScene(BaseScene):
         else:
             self.pitch = Pitch(None)
             self.hud = HUD(self.left_team, self.right_team, is_free_mode=is_free)
-            self.ball = Ball(WIDTH // 2, HEIGHT // 2)
+            self.ball = Ball(self.pitch.center[0], self.pitch.center[1])
             self.goal_freeze = 0
             self.match_goal_events = [] # Store {"scorer": name, "assistant": name}
             
@@ -383,10 +383,15 @@ class MatchScene(BaseScene):
                 if p.player_data.get("is_user_player") or (p.player_data.get("name") and cp.get("name") and p.player_data["name"].lower().strip() == cp["name"].lower().strip()):
                     self.switch_controlled_player(p)
                     break
+        
+        # Camera & World Surface initialization
+        self.camera_x = self.pitch.center[0] - WIDTH // 2
+        self.camera_y = self.pitch.center[1] - HEIGHT // 2
+        self.world_surface = pygame.Surface((self.pitch.world_width, self.pitch.world_height))
 
     def _kickoff(self):
         pitch_rect = self.pitch.rect
-        self.ball.reset(WIDTH // 2, HEIGHT // 2)
+        self.ball.reset(self.pitch.center[0], self.pitch.center[1])
         self.goal_scored = False
         self._goal_handled_frame = -1
         self.is_kickoff = True
@@ -592,7 +597,7 @@ class MatchScene(BaseScene):
                         self._kickoff()
 
     def _setup_new_half(self):
-        self.ball.reset(WIDTH // 2, HEIGHT // 2)
+        self.ball.reset(self.pitch.center[0], self.pitch.center[1])
         self._swap_sides()
 
     def on_exit(self):
@@ -601,6 +606,18 @@ class MatchScene(BaseScene):
 
     def update(self, dt):
         if dt > 0.05: dt = 0.05  # Failsafe para evitar saltos enormes tras menús
+        
+        # Camera update logic: center camera smoothly on ball
+        target_cam_x = self.ball.pos.x - WIDTH // 2
+        target_cam_y = self.ball.pos.y - HEIGHT // 2
+        
+        self.camera_x += (target_cam_x - self.camera_x) * 0.08
+        self.camera_y += (target_cam_y - self.camera_y) * 0.08
+        
+        world_w = self.pitch.width + self.pitch.margin * 2
+        world_h = self.pitch.height + self.pitch.margin * 2
+        self.camera_x = max(0, min(self.camera_x, world_w - WIDTH))
+        self.camera_y = max(0, min(self.camera_y, world_h - HEIGHT))
         
         if getattr(self, "intro_timer", 0) > 0:
             self.intro_timer -= dt
@@ -1212,9 +1229,19 @@ class MatchScene(BaseScene):
                 self.ball.target_player = target; kicker.kick_cooldown = 1.0; kicker.has_ball = False
 
     def draw(self, surface):
-        self.pitch.surface = surface; surface.fill(BLACK); self.pitch.draw()
-        all_entities = self.all_players + [self.ball]; all_entities.sort(key=lambda e: e.pos.y)
-        for entity in all_entities: entity.draw(surface)
+        # Dibujar todo en la superficie del mundo primero
+        self.world_surface.fill(BLACK)
+        self.pitch.surface = self.world_surface
+        self.pitch.draw()
+        
+        all_entities = self.all_players + [self.ball]
+        all_entities.sort(key=lambda e: e.pos.y)
+        for entity in all_entities: 
+            entity.draw(self.world_surface)
+            
+        # Blit la región visible por la cámara sobre la pantalla
+        surface.fill(BLACK)
+        surface.blit(self.world_surface, (0, 0), pygame.Rect(int(self.camera_x), int(self.camera_y), WIDTH, HEIGHT))
         if getattr(self, "intro_timer", 0) > 0: self._draw_intro(surface)
         self.hud.shared_match_state = {"left_field": self.left_field, "right_field": self.right_field, "left_gk": self.left_gk, "right_gk": self.right_gk}
         self.hud.draw(surface)
