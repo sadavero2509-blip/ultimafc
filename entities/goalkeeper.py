@@ -142,17 +142,17 @@ class Goalkeeper:
                 
             if self.is_controlled:
                 # ── Control Humano del Portero ──
-                keys = pygame.key.get_pressed()
+                from systems.input_manager import input_manager
                 
-                # Cargar Pase (S)
-                if keys[pygame.K_s]:
+                # Cargar Pase (PASS action - ej. S o mando)
+                if input_manager.is_action_pressed("PASS"):
                     self.pass_charge = min(self.pass_charge + 800 * dt, PASS_FORCE)
                 elif self.pass_charge > 0:
                     self._execute_pass(ball, PASS_FORCE * 0.4 + self.pass_charge * 0.6, teammates, pitch_rect)
                     self.pass_charge = 0
                     return
-                # Cargar Despeje/Tiro Largo (A)
-                elif keys[pygame.K_a]:
+                # Cargar Despeje/Tiro Largo (KICK action - ej. A o mando)
+                elif input_manager.is_action_pressed("KICK"):
                     self.kick_charge = min(self.kick_charge + 1200 * dt, KICK_FORCE)
                 elif self.kick_charge > 0:
                     # Direccionar largo adelante
