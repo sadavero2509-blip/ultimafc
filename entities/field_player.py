@@ -1146,7 +1146,7 @@ class FieldPlayer:
                 pygame.draw.ellipse(surface, boot_color_r, (frx - 4, fry - 2, 6, 4))
                 pygame.draw.rect(surface, (230, 230, 230), (frx - 3, fry + 2, 4, 1)) # Studs
                 pygame.draw.line(surface, (255, 255, 255) if boot_color_r != (240, 240, 240) else (50, 50, 50), (frx - 2, fry - 1), (frx, fry - 1), 1) # Laces
-            pygame.draw.line(surface, (30, 30, 30), (frx - 2, fry + 3, frx + 2, fry + 3), 1)
+            pygame.draw.line(surface, (30, 30, 30), (frx - 2, fry + 3), (frx + 2, fry + 3), 1)
             
             # 2. Torso (Shirt)
             ty = cy - int(radius * 0.3)
