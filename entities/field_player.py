@@ -412,47 +412,40 @@ class FieldPlayer:
                     match_scene.switch_controlled_player(target)
                 return
 
-            # PASE AL HUECO (Al espacio libre delante del receptor)
+            # PASE AL HUECO (Al espacio libre a un par de pasos del receptor apuntado)
             if input_manager.is_action_pressed("THROUGH") and self.pass_cooldown <= 0:
-                # Buscar receptor bien posicionado al hueco (prioriza profundidad)
-                target = self._find_pass_target(teammates, desired_dist=500, is_through=True)
+                # Buscar el receptor apuntado por el usuario
+                target = self._find_pass_target(teammates, desired_dist=300, is_through=True)
                 if target:
                     to_target = (target.pos - self.pos)
                     dist = to_target.length()
                     
-                    # Dirección hacia el arco rival (referencia principal)
+                    # Dirección hacia el arco rival
                     goal_dir = pygame.math.Vector2(1, 0) if self.side == "left" else pygame.math.Vector2(-1, 0)
                     
-                    # Dirección en la que corre el receptor
+                    # Dirección de carrera del receptor
                     run_dir = target.direction
                     if run_dir.length() < 0.1:
-                        # Si está parado, usar dirección hacia el arco rival
                         run_dir = goal_dir
                     else:
                         run_dir = run_dir.normalize()
-                        # Si el receptor corre hacia atrás, forzar hacia adelante
-                        if run_dir.dot(goal_dir) < 0:
-                            run_dir = (run_dir + goal_dir * 1.5)
-                            if run_dir.length() > 0:
-                                run_dir = run_dir.normalize()
-                            else:
-                                run_dir = goal_dir
+                        if run_dir.dot(goal_dir) < -0.3:
+                            run_dir = goal_dir
                     
-                    # Espacio libre adelantado (al hueco) - delante del receptor
-                    lead_dist = max(120, min(280, dist * 0.45))
+                    # Espacio libre a un par de pasos (35 a 65px por delante del receptor)
+                    lead_dist = max(35, min(65, dist * 0.18))
                     lead_pos = target.pos + run_dir * lead_dist
                     
-                    # Dirección final: puramente desde el pasador hacia el hueco
-                    # SIN mezcla de input del usuario - el pase al hueco va al espacio
+                    # Dirección final desde el pasador hacia el hueco cercano
                     to_space = (lead_pos - self.pos)
                     if to_space.length() > 0:
                         final_dir = to_space.normalize()
                     else:
                         final_dir = goal_dir
                     
-                    # Velocidad adaptativa basada en la distancia al hueco
+                    # Velocidad adaptativa justa para llegar al hueco cercano
                     dist_to_space = to_space.length()
-                    adapted_speed = min(850, 420 + dist_to_space * 0.8)
+                    adapted_speed = max(380, min(720, 320 + dist_to_space * 0.75))
                     
                     ball.vel = final_dir * adapted_speed
                     from systems.audio_manager import audio_manager
@@ -462,10 +455,9 @@ class FieldPlayer:
                     ball.owner = None
                     self.pass_cooldown = PASS_COOLDOWN
                     
-                    if match_scene:
+                    if match_scene and not (getattr(match_scene, 'user_is_sub', False)):
                         match_scene.switch_controlled_player(target)
-                        # Forzar un receive_cooldown ligeramente mayor para pases al hueco
-                        target.receive_cooldown = 0.45
+                        target.receive_cooldown = 0.3
                     return
                 else:
                     # Si no hay target claro, mandar al espacio en la dirección que apunta
@@ -804,11 +796,9 @@ class FieldPlayer:
 
 
     def _find_pass_target(self, teammates, desired_dist=200, is_through=False):
-        """Busca el mejor receptor. Para pases normales prioriza dirección; para pases al hueco prioriza profundidad."""
+        """Busca el receptor más cercano a la dirección apuntada por el usuario."""
         best = None
         best_score = float('inf')
-        
-        goal_x = WIDTH if self.side == "left" else 0
         side_sign = 1 if self.side == "left" else -1
 
         for mate in teammates:
@@ -823,39 +813,25 @@ class FieldPlayer:
             to_mate_dir = to_mate.normalize()
             dot = self.direction.dot(to_mate_dir)
             
+            # Debe estar en el cono apuntado por el usuario
+            if dot < -0.2: continue
+
+            # 1. Penalización primordial por ángulo de apuntado (prioridad: a quién apunta el usuario)
+            angle_penalty = (1.0 - dot) * 900
+            
+            # 2. Penalización por distancia deseada
+            dist_penalty = abs(dist - desired_dist) * 0.8
+            
+            # 3. Ajuste por profundidad si es pase al hueco
+            depth_bonus = 0
             if is_through:
-                # --- PASE AL HUECO: priorizar profundidad, no dirección de input ---
-                # Aceptar cualquier compañero en un cono amplio (180° frontal)
-                if dot < -0.15: continue
-                
-                # Cuánto está adelantado respecto a mí (hacia el arco rival)
                 depth_advance = (mate.pos.x - self.pos.x) * side_sign
-                
-                # Rechazar compañeros que estén detrás de mí
-                if depth_advance < -30: continue
-                
-                # Score: fuertemente dominado por la profundidad
-                # Más adelantado = mejor (negamos porque menor score = mejor)
-                depth_score = -depth_advance * 4.0
-                
-                # Penalización leve de ángulo (solo para desempatar, no para dominar)
-                angle_penalty = (1.0 - dot) * 200
-                
-                # Penalización leve de distancia al rango ideal
-                dist_penalty = abs(dist - desired_dist) * 0.5
-                
-                score = depth_score + angle_penalty + dist_penalty
-            else:
-                # --- PASE NORMAL: priorizar dirección de input ---
-                if dot < -0.3: continue
-                
-                # Penalización fuerte de ángulo
-                angle_penalty = (1.0 - dot) * 1200
-                
-                # Penalización de distancia
-                dist_penalty = abs(dist - desired_dist) * 1.2
-                
-                score = angle_penalty + dist_penalty
+                if depth_advance > 10:
+                    depth_bonus = -120  # Pequeño bono para favorecer pase al hueco hacia adelante
+                elif depth_advance < -50:
+                    depth_bonus = 300   # Penalizar pases al hueco muy hacia atrás
+
+            score = angle_penalty + dist_penalty + depth_bonus
             
             if score < best_score:
                 best_score = score
