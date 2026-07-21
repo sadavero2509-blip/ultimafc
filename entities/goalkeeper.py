@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 from settings import *
+from entities.player_appearance import get_player_appearance, draw_procedural_hair
 
 
 class Goalkeeper:
@@ -307,10 +308,15 @@ class Goalkeeper:
 
         # --- Procedural Humanoid Goalkeeper Model ---
         num_val = self.player_data.get("num", 1)
-        skin_color = (253, 213, 185) if num_val % 4 != 0 else (120, 80, 55)
-        skin_shadow = (max(0, skin_color[0]-35), max(0, skin_color[1]-30), max(0, skin_color[2]-25))
-        hair_color = [(45, 35, 30), (95, 65, 45), (210, 180, 100), (145, 90, 50), (25, 25, 25)][num_val % 5]
-        hair_style = num_val % 4
+        appearance = get_player_appearance(self.player_data)
+        skin_color = appearance["skin_color"]
+        skin_shadow = appearance["skin_shadow"]
+        hair_color = appearance["hair_color"]
+        hair_style = appearance["hair_style"]
+        boot_color_l = appearance["boot_color_l"]
+        boot_color_r = appearance["boot_color_r"]
+        has_beard_app = appearance["has_beard"]
+        has_headband = appearance["has_headband"]
 
         # Base proportions
         torso_w = int(radius * 1.35)
@@ -319,10 +325,6 @@ class Goalkeeper:
         
         hx = px
         hy = cy - int(radius * 1.2)  # Position the head higher to avoid overlap
-        
-        # Mismatching boot colors
-        boot_color_l = [(50, 255, 50), (255, 100, 0), (0, 220, 255), (255, 220, 0), (240, 240, 240)][num_val % 5]
-        boot_color_r = [(50, 255, 50), (255, 100, 0), (0, 220, 255), (255, 220, 0), (240, 240, 240)][(num_val + 1) % 5]
 
         # 1. Legs and Feet (GK stands in place mostly, slight bob, socks and boots)
         lx = px - int(radius * 0.3)
@@ -391,22 +393,12 @@ class Goalkeeper:
         pygame.draw.circle(surface, skin_color, (hx, hy), head_r - 1)
         pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
         
-        # Hairstyles
-        if hair_style == 0:
-            pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
-        elif hair_style == 1:
-            for dx, dy in [(-2, -head_r+1), (0, -head_r), (2, -head_r+1), (-3, -head_r+3), (3, -head_r+3)]:
-                pygame.draw.circle(surface, hair_color, (hx + dx, hy + dy), int(head_r * 0.45))
-        elif hair_style == 2:
-            pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.7))
-            for dx in [-3, 0, 3]:
-                pygame.draw.polygon(surface, hair_color, [(hx+dx-1, hy-head_r+1), (hx+dx, hy-head_r-2), (hx+dx+1, hy-head_r+1)])
-        else:
-            pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
-            aim_x = 1 if self.side == "left" else -1
-            py_x = hx - int(aim_x * head_r * 0.8)
-            py_y = hy + 2
-            pygame.draw.circle(surface, hair_color, (py_x, py_y), int(head_r * 0.4))
+        # Hairstyles (8 procedural styles from player_appearance)
+        gk_aim_hair = pygame.math.Vector2(1 if self.side == "left" else -1, 0)
+        draw_procedural_hair(surface, hx, hy, head_r, hair_style, hair_color, gk_aim_hair)
+        
+        if has_headband:
+            pygame.draw.line(surface, self.secondary, (hx - head_r + 1, hy - head_r + 4), (hx + head_r - 1, hy - head_r + 4), 2)
         
         # 5. Arms, Sleeves & GK Gloves
         glove_color = (255, 120, 0) # Bright orange gloves
@@ -474,8 +466,8 @@ class Goalkeeper:
         m_y = hy + int(head_r * 0.35)
         pygame.draw.line(surface, (100, 50, 50), (int(m_x - perp.x*2), int(m_y - perp.y*2)), (int(m_x + perp.x*2), int(m_y + perp.y*2)), 1)
         # Facial stubble/beard
-        if num_val % 3 == 0:
-            beard_color = (60, 50, 45) if skin_color != (120, 80, 55) else (40, 25, 15)
+        if has_beard_app:
+            beard_color = (max(0, skin_color[0]-60), max(0, skin_color[1]-55), max(0, skin_color[2]-50))
             pygame.draw.arc(surface, beard_color, (hx - head_r + 1, hy - 1, (head_r - 1) * 2, head_r), 3.14, 6.28, 2)
 
         # Indicador de jugador controlado

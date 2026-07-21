@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 from settings import *
+from entities.player_appearance import get_player_appearance, draw_procedural_hair
 
 class FieldPlayer:
     """Jugador universal de campo, puede ser controlado por humano o IA."""
@@ -996,10 +997,15 @@ class FieldPlayer:
 
         # --- Procedural Humanoid Player Model ---
         num_val = self.player_data.get("num", 0)
-        skin_color = (253, 213, 185) if num_val % 4 != 0 else (120, 80, 55)  # Diverse skins
-        skin_shadow = (max(0, skin_color[0]-35), max(0, skin_color[1]-30), max(0, skin_color[2]-25))
-        hair_color = [(45, 35, 30), (95, 65, 45), (210, 180, 100), (145, 90, 50), (25, 25, 25)][num_val % 5]
-        hair_style = num_val % 4  # Hairstyle variety
+        appearance = get_player_appearance(self.player_data)
+        skin_color = appearance["skin_color"]
+        skin_shadow = appearance["skin_shadow"]
+        hair_color = appearance["hair_color"]
+        hair_style = appearance["hair_style"]
+        boot_color_l = appearance["boot_color_l"]
+        boot_color_r = appearance["boot_color_r"]
+        has_beard_app = appearance["has_beard"]
+        has_headband = appearance["has_headband"]
         
         # Base proportions
         torso_w = int(radius * 1.3)
@@ -1008,8 +1014,6 @@ class FieldPlayer:
         
         aim_dir = self.direction.normalize() if self.direction.length() > 0.1 else pygame.math.Vector2(1 if self.side == "left" else -1, 0)
         sock_color = self.color
-        boot_color_l = [(50, 255, 50), (255, 100, 0), (0, 220, 255), (255, 220, 0), (240, 240, 240)][num_val % 5]
-        boot_color_r = [(50, 255, 50), (255, 100, 0), (0, 220, 255), (255, 220, 0), (240, 240, 240)][(num_val + 1) % 5]
 
         # Slide/tackle adjustments
         if tackle_active:
@@ -1049,29 +1053,15 @@ class FieldPlayer:
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r - 1)
             pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
             # Facial hair in tackle
-            if num_val % 3 == 0:
-                beard_color = (60, 50, 45) if skin_color != (120, 80, 55) else (40, 25, 15)
+            if has_beard_app:
+                beard_color = (max(0, skin_color[0]-60), max(0, skin_color[1]-55), max(0, skin_color[2]-50))
                 pygame.draw.arc(surface, beard_color, (hx - head_r + 1, hy - 1, (head_r - 1) * 2, head_r), 3.14, 6.28, 2)
             
-            # Hair for tackle
-            if hair_style == 0:
-                pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
-            elif hair_style == 1:
-                for dx, dy in [(-2, -2), (0, -3), (2, -2)]:
-                    pygame.draw.circle(surface, hair_color, (hx + dx - int(slide_dir.x * 2), hy + dy - int(slide_dir.y * 2)), int(head_r * 0.45))
-            elif hair_style == 2:
-                pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
-                for dx in [-2, 0, 2]:
-                    pygame.draw.polygon(surface, hair_color, [
-                        (hx - int(slide_dir.x * 2) + dx, hy - int(slide_dir.y * 2) - 1),
-                        (hx - int(slide_dir.x * 3) + dx - 2, hy - int(slide_dir.y * 3) - 2),
-                        (hx - int(slide_dir.x * 2) + dx + 1, hy - int(slide_dir.y * 2) - 1)
-                    ])
-            else:
-                pygame.draw.circle(surface, hair_color, (hx - int(slide_dir.x * 2), hy - int(slide_dir.y * 2)), int(head_r * 0.7))
-                py_x = hx - int(slide_dir.x * head_r * 0.8)
-                py_y = hy - int(slide_dir.y * head_r * 0.2)
-                pygame.draw.circle(surface, hair_color, (py_x, py_y), int(head_r * 0.45))
+            # Hair for tackle — simplified version of procedural hair offset by slide_dir
+            thx = hx - int(slide_dir.x * 2)
+            thy = hy - int(slide_dir.y * 2)
+            tackle_aim = pygame.math.Vector2(slide_dir.x, slide_dir.y)
+            draw_procedural_hair(surface, thx, thy, head_r, hair_style, hair_color, tackle_aim)
             
             # Legs: positioned backward along slide_dir with socks and boots
             leg_start_l = torso_center - slide_dir * t_len + perp * (t_wid * 0.5)
@@ -1197,23 +1187,10 @@ class FieldPlayer:
             pygame.draw.circle(surface, skin_color, (hx, hy), head_r - 1)
             pygame.draw.circle(surface, BLACK, (hx, hy), head_r, 1)
             
-            # Hairstyles
-            if hair_style == 0:
-                pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
-            elif hair_style == 1:
-                for dx, dy in [(-2, -head_r+1), (0, -head_r), (2, -head_r+1), (-3, -head_r+3), (3, -head_r+3)]:
-                    pygame.draw.circle(surface, hair_color, (hx + dx, hy + dy), int(head_r * 0.45))
-            elif hair_style == 2:
-                pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.7))
-                for dx in [-3, 0, 3]:
-                    pygame.draw.polygon(surface, hair_color, [(hx+dx-1, hy-head_r+1), (hx+dx, hy-head_r-2), (hx+dx+1, hy-head_r+1)])
-            else:
-                pygame.draw.circle(surface, hair_color, (hx, hy - head_r + 2), int(head_r * 0.75))
-                py_x = hx - int(aim_dir.x * head_r * 0.8)
-                py_y = hy - int(aim_dir.y * head_r * 0.2) + 2
-                pygame.draw.circle(surface, hair_color, (py_x, py_y), int(head_r * 0.4))
+            # Hairstyles (8 procedural styles from player_appearance)
+            draw_procedural_hair(surface, hx, hy, head_r, hair_style, hair_color, aim_dir)
                 
-            if num_val % 7 == 0:  # Headband
+            if has_headband:  # Headband
                 pygame.draw.line(surface, self.secondary, (hx - head_r + 1, hy - head_r + 4), (hx + head_r - 1, hy - head_r + 4), 2)
             
             # 6. Arms & Sleeves & Wristbands
@@ -1304,8 +1281,8 @@ class FieldPlayer:
             else:
                 pygame.draw.line(surface, (100, 50, 50), (int(m_x - perp_eye.x*2), int(m_y - perp_eye.y*2)), (int(m_x + perp_eye.x*2), int(m_y + perp_eye.y*2)), 1)
             # Facial stubble/beard
-            if num_val % 3 == 0:
-                beard_color = (60, 50, 45) if skin_color != (120, 80, 55) else (40, 25, 15)
+            if has_beard_app:
+                beard_color = (max(0, skin_color[0]-60), max(0, skin_color[1]-55), max(0, skin_color[2]-50))
                 pygame.draw.arc(surface, beard_color, (hx - head_r + 1, hy - 1, (head_r - 1) * 2, head_r), 3.14, 6.28, 2)
  
         # Celebración: anillo + chispas simples
