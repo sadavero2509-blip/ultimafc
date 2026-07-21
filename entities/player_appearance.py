@@ -44,32 +44,146 @@ BOOT_PALETTE = [
     (255, 120, 140),  # 11: Rojo Coral / Neón
 ]
 
+# Mapeos demográficos por país/región
+# SKIN_PALETTE: 0: Clara, 1: Melocotón, 2: Trigueña Clara, 3: Morena/Olivo, 4: Castaña/Canela, 5: Oscura Cálida, 6: Café Profundo, 7: Ébano
+# HAIR_COLOR_PALETTE: 0: Negro, 1: Chocolate Oscuro, 2: Castaño Medio, 3: Castaño Claro, 4: Rubio Dorado, 5: Rubio Platino, 6: Pelirrojo Cobrizo, 7: Pelirrojo, 8: Rubio Ceniza, 9: Plateado, 10: Azul, 11: Rosa
+
+NATIONALITY_APPEARANCE_WEIGHTS = {
+    # Nórdicos / Europa del Norte
+    "NO": {"skin": [0, 0, 0, 1, 1, 2], "hair": [2, 3, 4, 4, 5, 5, 6, 7, 8]},
+    "SE": {"skin": [0, 0, 0, 1, 1, 2], "hair": [2, 3, 4, 4, 5, 5, 8]},
+    "DK": {"skin": [0, 0, 0, 1, 1, 2], "hair": [2, 3, 4, 4, 5, 5, 8]},
+    "FI": {"skin": [0, 0, 0, 1, 1], "hair": [3, 4, 4, 5, 5, 8]},
+    "IS": {"skin": [0, 0, 0, 1, 1], "hair": [3, 4, 4, 5, 6, 7, 8]},
+
+    # Europa Este / Centro
+    "PL": {"skin": [0, 0, 1, 1, 2], "hair": [1, 2, 3, 4, 4, 8]},
+    "UA": {"skin": [0, 0, 1, 1, 2], "hair": [1, 2, 3, 4, 8]},
+    "HR": {"skin": [0, 1, 1, 2, 3], "hair": [0, 1, 2, 2, 3]},
+    "CZ": {"skin": [0, 0, 1, 1, 2], "hair": [1, 2, 3, 4, 8]},
+    "HU": {"skin": [0, 1, 1, 2], "hair": [1, 2, 3, 4]},
+    "SK": {"skin": [0, 0, 1, 1, 2], "hair": [1, 2, 3, 4]},
+    "RO": {"skin": [0, 1, 2, 3], "hair": [0, 1, 2, 3]},
+    "RS": {"skin": [0, 1, 2, 3], "hair": [0, 1, 2, 3]},
+    "GR": {"skin": [1, 2, 3, 3, 4], "hair": [0, 0, 1, 2]},
+    "TR": {"skin": [1, 2, 3, 4], "hair": [0, 0, 1, 2]},
+
+    # Europa Occidental
+    "DE": {"skin": [0, 0, 1, 1, 2, 3, 5], "hair": [1, 2, 3, 4, 4, 5, 8]},
+    "NL": {"skin": [0, 0, 1, 1, 2, 4, 6], "hair": [2, 3, 4, 4, 5, 8]},
+    "BE": {"skin": [0, 0, 1, 1, 2, 3, 5], "hair": [1, 2, 3, 4, 5]},
+    "CH": {"skin": [0, 0, 1, 1, 2, 3], "hair": [1, 2, 3, 4]},
+    "AT": {"skin": [0, 0, 1, 1, 2], "hair": [1, 2, 3, 4, 5]},
+    "EN": {"skin": [0, 0, 1, 1, 2, 4, 5, 6], "hair": [1, 2, 3, 4, 4, 6, 7]},
+    "SC": {"skin": [0, 0, 0, 1], "hair": [2, 3, 4, 6, 6, 7, 7]},
+    "WA": {"skin": [0, 0, 1, 1], "hair": [1, 2, 3, 4, 6, 7]},
+    "IE": {"skin": [0, 0, 0, 1], "hair": [2, 3, 4, 6, 6, 7, 7]},
+
+    # Sur de Europa / Mediterráneo
+    "ES": {"skin": [1, 2, 2, 3, 3, 4], "hair": [0, 1, 1, 2, 3]},
+    "IT": {"skin": [1, 2, 2, 3, 3, 4], "hair": [0, 1, 1, 2, 3]},
+    "PT": {"skin": [1, 2, 2, 3, 3, 4, 5], "hair": [0, 0, 1, 2, 3]},
+
+    # Francia (diversidad amplia histórica en fútbol)
+    "FR": {"skin": [0, 1, 2, 3, 4, 5, 6, 7], "hair": [0, 0, 1, 1, 2, 3, 4]},
+
+    # África Sub-Sahariana
+    "SN": {"skin": [5, 6, 6, 7, 7, 7], "hair": [0, 0, 0, 0, 10, 11]},
+    "NG": {"skin": [5, 6, 6, 7, 7, 7], "hair": [0, 0, 0, 0, 10, 11]},
+    "CM": {"skin": [5, 6, 6, 7, 7, 7], "hair": [0, 0, 0, 0]},
+    "GH": {"skin": [5, 6, 6, 7, 7, 7], "hair": [0, 0, 0, 0]},
+    "CI": {"skin": [5, 6, 6, 7, 7, 7], "hair": [0, 0, 0, 0]},
+    "CD": {"skin": [5, 6, 6, 7, 7, 7], "hair": [0, 0, 0, 0]},
+    "GN": {"skin": [5, 6, 6, 7, 7, 7], "hair": [0, 0, 0, 0]},
+    "CV": {"skin": [4, 5, 5, 6, 6, 7], "hair": [0, 0, 1]},
+    "ZA": {"skin": [4, 5, 6, 6, 7], "hair": [0, 0, 1]},
+    "AO": {"skin": [5, 6, 6, 7, 7], "hair": [0, 0, 0]},
+    "ML": {"skin": [5, 6, 6, 7, 7], "hair": [0, 0, 0]},
+    "BF": {"skin": [5, 6, 6, 7, 7], "hair": [0, 0, 0]},
+
+    # Norte de África / Medio Oriente
+    "MA": {"skin": [2, 3, 3, 4, 4, 5], "hair": [0, 0, 1, 2]},
+    "EG": {"skin": [2, 3, 3, 4, 4, 5], "hair": [0, 0, 1, 2]},
+    "DZ": {"skin": [2, 3, 3, 4, 4, 5], "hair": [0, 0, 1, 2]},
+    "TN": {"skin": [2, 3, 3, 4, 4, 5], "hair": [0, 0, 1, 2]},
+    "SA": {"skin": [2, 3, 3, 4, 5], "hair": [0, 0, 1]},
+    "QA": {"skin": [2, 3, 4, 5], "hair": [0, 0, 1]},
+    "IR": {"skin": [1, 2, 3, 3, 4], "hair": [0, 0, 1, 2]},
+    "IQ": {"skin": [2, 3, 4], "hair": [0, 0, 1]},
+    "AE": {"skin": [2, 3, 4, 5], "hair": [0, 0, 1]},
+
+    # Asia Oriental / Sudeste
+    "JP": {"skin": [0, 1, 1, 2], "hair": [0, 0, 0, 1, 10, 11]},
+    "KR": {"skin": [0, 1, 1, 2], "hair": [0, 0, 0, 1]},
+    "CN": {"skin": [0, 1, 1, 2], "hair": [0, 0, 0, 1]},
+    "VN": {"skin": [1, 2, 3], "hair": [0, 0, 1]},
+    "TH": {"skin": [1, 2, 3], "hair": [0, 0, 1]},
+
+    # Sudamérica
+    "AR": {"skin": [0, 1, 1, 2, 2, 3, 4], "hair": [0, 1, 1, 2, 3, 4]},
+    "BR": {"skin": [1, 2, 3, 4, 5, 6, 7], "hair": [0, 0, 1, 1, 2, 3]},
+    "CO": {"skin": [2, 3, 3, 4, 5, 6], "hair": [0, 0, 1, 1, 2]},
+    "UY": {"skin": [0, 1, 1, 2, 3, 4], "hair": [0, 1, 1, 2, 3]},
+    "CL": {"skin": [1, 2, 2, 3, 4], "hair": [0, 0, 1, 2]},
+    "EC": {"skin": [2, 3, 4, 5, 6], "hair": [0, 0, 1, 2]},
+    "PE": {"skin": [2, 3, 3, 4], "hair": [0, 0, 1]},
+    "VE": {"skin": [1, 2, 3, 4, 5], "hair": [0, 0, 1, 2]},
+    "BO": {"skin": [2, 3, 3, 4], "hair": [0, 0, 1]},
+    "PY": {"skin": [1, 2, 2, 3, 4], "hair": [0, 0, 1, 2]},
+
+    # Centroamérica / Caribe
+    "MX": {"skin": [1, 2, 3, 3, 4], "hair": [0, 0, 1, 2]},
+    "CR": {"skin": [1, 2, 3, 4, 5], "hair": [0, 0, 1, 2]},
+    "PA": {"skin": [3, 4, 5, 6], "hair": [0, 0, 1]},
+    "JM": {"skin": [5, 6, 6, 7, 7], "hair": [0, 0, 1]},
+    "HT": {"skin": [5, 6, 7, 7], "hair": [0, 0, 1]},
+    "CU": {"skin": [2, 3, 4, 5, 6], "hair": [0, 0, 1]},
+    "DO": {"skin": [3, 4, 5, 6], "hair": [0, 0, 1]},
+
+    # Norteamérica / Oceanía
+    "US": {"skin": [0, 1, 1, 2, 3, 5, 6], "hair": [1, 2, 3, 4, 4, 5]},
+    "CA": {"skin": [0, 1, 1, 2, 3, 5, 6], "hair": [1, 2, 3, 4, 5]},
+    "AU": {"skin": [0, 1, 1, 2, 3], "hair": [1, 2, 3, 4, 5]},
+    "NZ": {"skin": [1, 2, 3, 4, 5], "hair": [0, 1, 2, 3, 4]},
+}
+
+# Pool default para países no especificados
+DEFAULT_APPEARANCE_WEIGHTS = {
+    "skin": [0, 1, 2, 3, 4, 5, 6, 7],
+    "hair": list(range(len(HAIR_COLOR_PALETTE)))
+}
+
 def get_player_appearance(player_data):
-    """Calcula de forma determinista (hash de datos) la apariencia del jugador."""
+    """Calcula de forma determinista (hash de datos + nacionalidad) la apariencia del jugador."""
     name = str(player_data.get("name", ""))
     num = int(player_data.get("num", 1))
     pos = str(player_data.get("pos", ""))
-    
+    nat = str(player_data.get("nat", player_data.get("country_code", ""))).upper()
+
     # Hash determinista para que la apariencia no cambie entre frames
-    h_str = f"{name}_{num}_{pos}"
+    h_str = f"{name}_{num}_{pos}_{nat}"
     h_val = 0
     for char in h_str:
         h_val = (h_val * 31 + ord(char)) & 0xFFFFFFFF
-        
-    skin_idx = h_val % len(SKIN_PALETTE)
-    hair_col_idx = (h_val // 7) % len(HAIR_COLOR_PALETTE)
+
+    weights = NATIONALITY_APPEARANCE_WEIGHTS.get(nat, DEFAULT_APPEARANCE_WEIGHTS)
+    skin_pool = weights["skin"]
+    hair_pool = weights["hair"]
+
+    skin_idx = skin_pool[h_val % len(skin_pool)]
+    hair_col_idx = hair_pool[(h_val // 7) % len(hair_pool)]
     hair_style_idx = (h_val // 13) % 8  # 8 estilos de cabello
     boot_l_idx = (h_val // 19) % len(BOOT_PALETTE)
     boot_r_idx = (h_val // 23) % len(BOOT_PALETTE)
     has_beard = ((h_val // 29) % 3 == 0)
     has_headband = ((h_val // 31) % 6 == 0)
-    
+
     skin_color = SKIN_PALETTE[skin_idx]
     skin_shadow = (max(0, skin_color[0]-40), max(0, skin_color[1]-35), max(0, skin_color[2]-30))
     hair_color = HAIR_COLOR_PALETTE[hair_col_idx]
     boot_color_l = BOOT_PALETTE[boot_l_idx]
     boot_color_r = BOOT_PALETTE[boot_r_idx]
-    
+
     return {
         "skin_color": skin_color,
         "skin_shadow": skin_shadow,
