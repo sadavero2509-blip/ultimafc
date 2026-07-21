@@ -21,10 +21,12 @@ class FieldPlayer:
         self.secondary = team_data["secondary"]
         self.side = side
         
-        self.formation_pos = formation_pos
-        self.human_speed = PLAYER_SPEED * (player_data["s"]["speed"] / 80.0)
+        sp_stat = max(30, min(99, player_data["s"]["speed"]))
+        # Escalado progresivo (exponencial suave): beneficia más a los jugadores de mayor estat
+        speed_factor = (sp_stat / 75.0) ** 1.25
+        self.human_speed = PLAYER_SPEED * speed_factor
         self.difficulty = 5 # Default
-        self.ai_speed = AI_SPEED * (player_data["s"]["speed"] / 80.0)
+        self.ai_speed = AI_SPEED * speed_factor
         
         self.direction = pygame.math.Vector2(1 if side == "left" else -1, 0)
         self.has_ball = False

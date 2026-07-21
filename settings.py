@@ -43,28 +43,28 @@ UI_CARD_HOVER = (40, 40, 70)
 UI_TEXT = (230, 230, 240)
 UI_TEXT_DIM = (140, 140, 160)
 
-# Física base (Rebalanceado v1.1 – Ritmo más pausado, defensas fuertes)
-FRICTION = 0.983         # Más fricción → balón se frena antes
+# Física base (Rebalanceado v1.2 – Ritmo más dinámico y rápido)
+FRICTION = 0.987         # Menos fricción → el balón ruede más fluido y rápido
 BALL_RADIUS = 7          
 PLAYER_RADIUS = 13       
 
-PLAYER_SPEED = 75        # Escala ajustada para campo más grande (56→75)
-DASH_MULTIPLIER = 1.60   # Sprint menos exagerado
-KICK_FORCE = 900         # Tiros ajustados (720→900)
-PASS_FORCE = 600         # Pases ajustados (480→600)
+PLAYER_SPEED = 86        # Velocidad base de jugador aumentada (75→86)
+DASH_MULTIPLIER = 1.70   # Sprint más explosivo (1.60→1.70)
+KICK_FORCE = 1000        # Tiros más potentes (900→1000)
+PASS_FORCE = 680         # Pases más rápidos (600→680)
 PASS_COOLDOWN = 0.35     
 MAGNET_DIST = 20         # Rango de posesión ampliado para igualar tamaños (16→20)
 
 # Cooldowns y Robos
-TACKLE_BOOST = 220       # Velocidad de tackle (170→220)
+TACKLE_BOOST = 250       # Velocidad de tackle aumentada (220→250)
 TACKLE_DURATION = 0.5    
 
 # IA
-AI_SPEED = 72            # IA ajustada (54→72)
-AI_CHASE_RADIUS = 300    # Rango de persecución ampliado (220→300)
+AI_SPEED = 82            # IA ajustada a mayor ritmo (72→82)
+AI_CHASE_RADIUS = 320    # Rango de persecución ampliado (300→320)
 AI_POSITION_JITTER = 12  
-GK_SPEED = 90            # Portero ajustado (70→90)
-GK_DIVE_SPEED = 240      # Portero se lanza más rápido (185→240)
+GK_SPEED = 98            # Portero ajustado a la mayor velocidad (90→98)
+GK_DIVE_SPEED = 265      # Portero se lanza más rápido (240→265)
 GK_REACT_DIST = 100      # Portero reacciona desde más lejos (75→100)
 
 # Partido
