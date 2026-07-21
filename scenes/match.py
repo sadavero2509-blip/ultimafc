@@ -142,6 +142,11 @@ class MatchScene(BaseScene):
             if self.intro_type:
                 self.intro_timer = 4.5
 
+        # Camera & World Surface initialization (unconditionally initialized for both new and resumed matches)
+        self.camera_x = self.pitch.center[0] - WIDTH // 2
+        self.camera_y = self.pitch.center[1] - HEIGHT // 2
+        self.world_surface = pygame.Surface((self.pitch.world_width, self.pitch.world_height))
+
     def _setup_players(self):
         pitch_rect = self.pitch.rect
         from settings import FORMATIONS
