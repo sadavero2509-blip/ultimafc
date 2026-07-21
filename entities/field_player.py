@@ -409,37 +409,43 @@ class FieldPlayer:
                     match_scene.switch_controlled_player(target)
                 return
 
-            # PASE AL HUECO (Al espacio libre y velocidad adaptativa)
+            # PASE AL HUECO (Al espacio libre delante del receptor)
             if input_manager.is_action_pressed("THROUGH") and self.pass_cooldown <= 0:
-                # Pases al hueco siempre buscan una distancia media-larga
+                # Buscar receptor bien posicionado al hueco (prioriza profundidad)
                 target = self._find_pass_target(teammates, desired_dist=500, is_through=True)
                 if target:
                     to_target = (target.pos - self.pos)
                     dist = to_target.length()
                     
+                    # Dirección hacia el arco rival (referencia principal)
+                    goal_dir = pygame.math.Vector2(1, 0) if self.side == "left" else pygame.math.Vector2(-1, 0)
+                    
                     # Dirección en la que corre el receptor
                     run_dir = target.direction
                     if run_dir.length() < 0.1:
-                        # Si está parado, corre hacia el arco rival
-                        run_dir = pygame.math.Vector2(1, 0) if self.side == "left" else pygame.math.Vector2(-1, 0)
+                        # Si está parado, usar dirección hacia el arco rival
+                        run_dir = goal_dir
                     else:
                         run_dir = run_dir.normalize()
+                        # Si el receptor corre hacia atrás, forzar hacia adelante
+                        if run_dir.dot(goal_dir) < 0:
+                            run_dir = (run_dir + goal_dir * 1.5)
+                            if run_dir.length() > 0:
+                                run_dir = run_dir.normalize()
+                            else:
+                                run_dir = goal_dir
                     
-                    # Espacio libre adelantado (al hueco)
-                    lead_dist = max(130, min(250, dist * 0.5))
+                    # Espacio libre adelantado (al hueco) - delante del receptor
+                    lead_dist = max(120, min(280, dist * 0.45))
                     lead_pos = target.pos + run_dir * lead_dist
                     
-                    # Dirección final desde el pasador hacia el hueco
+                    # Dirección final: puramente desde el pasador hacia el hueco
+                    # SIN mezcla de input del usuario - el pase al hueco va al espacio
                     to_space = (lead_pos - self.pos)
                     if to_space.length() > 0:
                         final_dir = to_space.normalize()
                     else:
-                        final_dir = self.direction
-                    
-                    # Mezclar con la dirección de apuntado actual del usuario para permitir control manual (35%)
-                    aim_dir = self.direction
-                    if aim_dir.length() > 0:
-                        final_dir = (final_dir * 0.65 + aim_dir.normalize() * 0.35).normalize()
+                        final_dir = goal_dir
                     
                     # Velocidad adaptativa basada en la distancia al hueco
                     dist_to_space = to_space.length()
@@ -795,11 +801,12 @@ class FieldPlayer:
 
 
     def _find_pass_target(self, teammates, desired_dist=200, is_through=False):
-        """Busca el mejor receptor basándose primordialmente en la dirección y el peso de la potencia (distancia deseada)."""
+        """Busca el mejor receptor. Para pases normales prioriza dirección; para pases al hueco prioriza profundidad."""
         best = None
         best_score = float('inf')
         
         goal_x = WIDTH if self.side == "left" else 0
+        side_sign = 1 if self.side == "left" else -1
 
         for mate in teammates:
             if mate is self: continue
@@ -813,25 +820,39 @@ class FieldPlayer:
             to_mate_dir = to_mate.normalize()
             dot = self.direction.dot(to_mate_dir)
             
-            # Ampliamos el cono de visión
-            if dot < -0.3: continue 
-
-            # Cálculo de score:
-            # 1. Penalización de ángulo
-            angle_penalty = (1.0 - dot) * 1200
-            
-            # 2. Penalización de distancia
-            dist_penalty = abs(dist - desired_dist) * 1.2
-            
-            # 3. Bonus por profundidad (si es pase al hueco)
-            depth_bonus = 0
             if is_through:
-                # Premiar a quien esté más adelantado que yo hacia el arco rival
-                is_ahead = (mate.pos.x - self.pos.x) * (1 if self.side == "left" else -1) > 20
-                if is_ahead: depth_bonus = -400
-                else: depth_bonus = 500 # Penalizar pases al hueco hacia atrás
-
-            score = angle_penalty + dist_penalty + depth_bonus
+                # --- PASE AL HUECO: priorizar profundidad, no dirección de input ---
+                # Aceptar cualquier compañero en un cono amplio (180° frontal)
+                if dot < -0.15: continue
+                
+                # Cuánto está adelantado respecto a mí (hacia el arco rival)
+                depth_advance = (mate.pos.x - self.pos.x) * side_sign
+                
+                # Rechazar compañeros que estén detrás de mí
+                if depth_advance < -30: continue
+                
+                # Score: fuertemente dominado por la profundidad
+                # Más adelantado = mejor (negamos porque menor score = mejor)
+                depth_score = -depth_advance * 4.0
+                
+                # Penalización leve de ángulo (solo para desempatar, no para dominar)
+                angle_penalty = (1.0 - dot) * 200
+                
+                # Penalización leve de distancia al rango ideal
+                dist_penalty = abs(dist - desired_dist) * 0.5
+                
+                score = depth_score + angle_penalty + dist_penalty
+            else:
+                # --- PASE NORMAL: priorizar dirección de input ---
+                if dot < -0.3: continue
+                
+                # Penalización fuerte de ángulo
+                angle_penalty = (1.0 - dot) * 1200
+                
+                # Penalización de distancia
+                dist_penalty = abs(dist - desired_dist) * 1.2
+                
+                score = angle_penalty + dist_penalty
             
             if score < best_score:
                 best_score = score
