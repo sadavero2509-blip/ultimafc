@@ -21,6 +21,7 @@ class FieldPlayer:
         self.secondary = team_data["secondary"]
         self.side = side
         
+        self.formation_pos = formation_pos
         sp_stat = max(30, min(99, player_data["s"]["speed"]))
         # Escalado progresivo (exponencial suave): beneficia más a los jugadores de mayor estat
         speed_factor = (sp_stat / 75.0) ** 1.25
