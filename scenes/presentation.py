@@ -178,9 +178,15 @@ class PresentationScene:
             sub = self.font_subtitle.render(f"¡BIENVENIDO AL {self.team['name'].upper()}!", True, WHITE); surface.blit(sub, (WIDTH//2 - sub.get_width()//2, 120))
             cy = HEIGHT // 2 + 50; draw_badge(surface, self.team, WIDTH//2 - 150, cy, size=150)
             if not self.is_manager:
-                shirt_rect = pygame.Rect(0, 0, 140, 180); shirt_rect.center = (WIDTH//2 + 150, cy); pygame.draw.rect(surface, (30, 30, 35), shirt_rect, border_radius=15); pygame.draw.rect(surface, UI_ACCENT, shirt_rect, 3, border_radius=15)
-                draw_uniform_preview(surface, self.team, shirt_rect.centerx, shirt_rect.centery - 20, scale=1.5); num_font = pygame.font.SysFont("Impact", 48) if pygame.font.get_init() else pygame.font.Font(None, 48); ns = num_font.render(str(self.number), True, WHITE); surface.blit(ns, (shirt_rect.centerx - ns.get_width()//2, shirt_rect.centery + 30))
-                # Interactive shirt number change gold indicator
+                shirt_rect = pygame.Rect(0, 0, 180, 240); shirt_rect.center = (WIDTH//2 + 150, cy); pygame.draw.rect(surface, (30, 30, 35), shirt_rect, border_radius=15); pygame.draw.rect(surface, UI_ACCENT, shirt_rect, 3, border_radius=15)
+                from entities.player_appearance import draw_player_avatar, get_player_appearance
+                p_app = None
+                from data.career_manager import career_manager
+                if career_manager.active and career_manager.career_player:
+                    p_app = career_manager.career_player.get("custom_appearance") or get_player_appearance(career_manager.career_player)
+                else:
+                    p_app = get_player_appearance({"name": self.player_name, "num": self.number, "pos": "ST"})
+                draw_player_avatar(surface, shirt_rect.centerx, shirt_rect.centery - 10, p_app, scale=2.8, team_color=self.team.get("primary", (0, 200, 150)), secondary_color=self.team.get("secondary", (255, 255, 255)), number=self.number)
                 hint_lbl = self.font_hint.render("▲/▼ o W/S: Pedir cambio de Dorsal", True, GOLD)
                 surface.blit(hint_lbl, (shirt_rect.centerx - hint_lbl.get_width()//2, shirt_rect.bottom + 15))
             name_lbl = self.font_title.render(self.player_name, True, YELLOW); surface.blit(name_lbl, (WIDTH//2 - name_lbl.get_width()//2, HEIGHT - 120))

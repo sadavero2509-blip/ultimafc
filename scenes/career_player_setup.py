@@ -35,6 +35,13 @@ class CareerPlayerSetupScene:
         self.idol_idx = 0
         self.legends = []
 
+        # Appearance Customization (Integrated into Step 5 / Step 6 flow)
+        self.skin_idx = 1
+        self.hair_style_idx = 0
+        self.hair_col_idx = 0
+        self.boot_l_idx = 0
+        self.boot_r_idx = 1
+
         try:
             self.font_title = pygame.font.SysFont("Impact", 48)
             self.font_btn = pygame.font.SysFont("Arial", 28, bold=True)
@@ -78,6 +85,8 @@ class CareerPlayerSetupScene:
                 elif self.step == 5:
                     self._handle_step_idol(event)
                 elif self.step == 6:
+                    self._handle_step_appearance(event)
+                elif self.step == 7:
                     self._handle_step_confirm(event)
 
     def _handle_step0(self, event):
@@ -176,8 +185,6 @@ class CareerPlayerSetupScene:
             if l.get("nat") == nat: score += 5
             return score
             
-        all_legends.sort(key=legend_score, reverse=True)
-        self.legends = all_legends
         self.idol_idx = 0
 
     def _handle_step_idol(self, event):
@@ -186,36 +193,74 @@ class CareerPlayerSetupScene:
         elif event.key in (pygame.K_RIGHT, pygame.K_d):
             self.idol_idx = (self.idol_idx + 1) % len(self.legends)
         elif event.key == pygame.K_RETURN:
-            self._pre_assign_team()
+            if not hasattr(self, 'app_option'): self.app_option = 0
             self.step = 6
         elif event.key == pygame.K_ESCAPE:
             self.step = 4
+
+    def _handle_step_appearance(self, event):
+        if not hasattr(self, 'app_option'): self.app_option = 0
+        from entities.player_appearance import SKIN_PALETTE, HAIR_COLOR_PALETTE, BOOT_PALETTE
+
+        if event.key in (pygame.K_UP, pygame.K_w):
+            self.app_option = (self.app_option - 1) % 5
+        elif event.key in (pygame.K_DOWN, pygame.K_s):
+            self.app_option = (self.app_option + 1) % 5
+        elif event.key in (pygame.K_LEFT, pygame.K_a):
+            if self.app_option == 0: self.skin_idx = (self.skin_idx - 1) % len(SKIN_PALETTE)
+            elif self.app_option == 1: self.hair_style_idx = (self.hair_style_idx - 1) % 8
+            elif self.app_option == 2: self.hair_col_idx = (self.hair_col_idx - 1) % len(HAIR_COLOR_PALETTE)
+            elif self.app_option == 3: self.boot_l_idx = (self.boot_l_idx - 1) % len(BOOT_PALETTE)
+            elif self.app_option == 4: self.boot_r_idx = (self.boot_r_idx - 1) % len(BOOT_PALETTE)
+        elif event.key in (pygame.K_RIGHT, pygame.K_d):
+            if self.app_option == 0: self.skin_idx = (self.skin_idx + 1) % len(SKIN_PALETTE)
+            elif self.app_option == 1: self.hair_style_idx = (self.hair_style_idx + 1) % 8
+            elif self.app_option == 2: self.hair_col_idx = (self.hair_col_idx + 1) % len(HAIR_COLOR_PALETTE)
+            elif self.app_option == 3: self.boot_l_idx = (self.boot_l_idx + 1) % len(BOOT_PALETTE)
+            elif self.app_option == 4: self.boot_r_idx = (self.boot_r_idx + 1) % len(BOOT_PALETTE)
+        elif event.key == pygame.K_RETURN:
+            self._pre_assign_team()
+            self.step = 7
+        elif event.key == pygame.K_ESCAPE:
+            self.step = 5
 
     def _handle_step_confirm(self, event):
         if event.key == pygame.K_RETURN:
             self._start_career()
         elif event.key == pygame.K_ESCAPE:
-            self.step = 5
+            self.step = 6
 
     def _pre_assign_team(self):
         # Temp assign for preview
         lg = self.leagues[self.lg_idx]
         from data.career_manager import career_manager
-        # Simulate the logic to show the player which team they'll join
-        # Note: career_manager isn't initialized yet, but we use a dry run of the logic
         lg_teams = [t for t in TEAMS if t.get("league") == lg]
         if not lg_teams: lg_teams = TEAMS[:10]
-        
-        # Pick one that looks "mid-table" for a 65-70 player
-        # In the real manager, it does a more complex search.
         self.assigned_team = random.choice(lg_teams)
+
+    def _get_custom_appearance_dict(self):
+        from entities.player_appearance import SKIN_PALETTE, HAIR_COLOR_PALETTE, BOOT_PALETTE
+        skin_color = SKIN_PALETTE[self.skin_idx]
+        skin_shadow = (max(0, skin_color[0]-40), max(0, skin_color[1]-35), max(0, skin_color[2]-30))
+        hair_color = HAIR_COLOR_PALETTE[self.hair_col_idx]
+        boot_color_l = BOOT_PALETTE[self.boot_l_idx]
+        boot_color_r = BOOT_PALETTE[self.boot_r_idx]
+        return {
+            "skin_color": skin_color,
+            "skin_shadow": skin_shadow,
+            "hair_color": hair_color,
+            "hair_style": self.hair_style_idx,
+            "boot_color_l": boot_color_l,
+            "boot_color_r": boot_color_r,
+            "has_beard": (self.hair_style_idx % 2 == 1),
+            "has_headband": (self.hair_style_idx == 3)
+        }
 
     def _start_career(self):
         from data.career_manager import career_manager
         
         # Create player data (Starting lower as requested)
         ovr = random.randint(54, 59)
-        # Basic stats distribution based on position (6 stats + gk, synced with Ultimate Team)
         stats = {"speed": 50, "shot": 50, "passing": 50, "dribbling": 48, "defense": 50, "physical": 50, "gk": 10}
         pos = self.positions[self.pos_idx]
         if pos == "ST": stats["shot"] = 64; stats["speed"] = 62; stats["dribbling"] = 58; stats["physical"] = 55
@@ -235,7 +280,8 @@ class CareerPlayerSetupScene:
             "num": random.randint(10, 40),
             "nat": self.COUNTRIES[getattr(self, 'nat_idx', 0)],
             "s": stats,
-            "idol": self.legends[self.idol_idx]["name"] if self.legends else "Nadie"
+            "idol": self.legends[self.idol_idx]["name"] if self.legends else "Nadie",
+            "custom_appearance": self._get_custom_appearance_dict()
         }
         
         career_manager.start_player_career(player_data, self.leagues[self.lg_idx], self.assigned_team["short"])
@@ -285,7 +331,7 @@ class CareerPlayerSetupScene:
             
         title = self.font_title.render("NUEVA CARRERA DE JUGADOR", True, UI_ACCENT)
         surface.blit(title, (WIDTH//2 - title.get_width()//2, 40))
-        
+
         if self.step == 0:
             lbl = self.font_btn.render("Nombre del Jugador:", True, WHITE)
             surface.blit(lbl, (WIDTH//2 - lbl.get_width()//2, 250))
@@ -365,27 +411,74 @@ class CareerPlayerSetupScene:
                 surface.blit(hint_s, (WIDTH//2 - hint_s.get_width()//2, 360))
 
         elif self.step == 6:
+            lbl = self.font_btn.render("Personaliza la Apariencia de tu Jugador:", True, WHITE)
+            surface.blit(lbl, (WIDTH//2 - lbl.get_width()//2, 120))
+
+            from entities.player_appearance import draw_player_avatar, SKIN_PALETTE, HAIR_COLOR_PALETTE, BOOT_PALETTE
+            app_dict = self._get_custom_appearance_dict()
+
+            # Render Avatar Card Preview
+            avatar_card = pygame.Rect(WIDTH//2 - 320, 180, 220, 280)
+            pygame.draw.rect(surface, (25, 35, 55), avatar_card, border_radius=15)
+            pygame.draw.rect(surface, UI_ACCENT, avatar_card, 2, border_radius=15)
+            draw_player_avatar(surface, avatar_card.centerx, avatar_card.centery - 10, app_dict, scale=3.2, team_color=(0, 200, 150), number="10")
+
+            # Customization Options List
+            opt_labels = [
+                f"Tono de Piel: {self.skin_idx + 1}/{len(SKIN_PALETTE)}",
+                f"Estilo de Cabello: Estilo {self.hair_style_idx + 1}/8",
+                f"Color de Cabello: Color {self.hair_col_idx + 1}/{len(HAIR_COLOR_PALETTE)}",
+                f"Bota Izquierda: Color {self.boot_l_idx + 1}/{len(BOOT_PALETTE)}",
+                f"Bota Derecha: Color {self.boot_r_idx + 1}/{len(BOOT_PALETTE)}"
+            ]
+
+            start_y = 190
+            for i, opt in enumerate(opt_labels):
+                is_sel = (getattr(self, 'app_option', 0) == i)
+                rect = pygame.Rect(WIDTH//2 - 70, start_y + i * 52, 380, 44)
+                bg_col = (45, 60, 90) if is_sel else (30, 38, 55)
+                border_col = GOLD if is_sel else (60, 70, 95)
+                pygame.draw.rect(surface, bg_col, rect, border_radius=8)
+                pygame.draw.rect(surface, border_col, rect, 2 if is_sel else 1, border_radius=8)
+
+                txt_col = WHITE if is_sel else UI_TEXT_DIM
+                ts = self.font_text.render(opt, True, txt_col)
+                surface.blit(ts, (rect.left + 15, rect.centery - ts.get_height()//2))
+
+                nav_ts = self.font_hint.render("◀  ▶", True, GOLD if is_sel else (100, 100, 120))
+                surface.blit(nav_ts, (rect.right - nav_ts.get_width() - 15, rect.centery - nav_ts.get_height()//2))
+
+        elif self.step == 7:
             lbl = self.font_btn.render("¿Todo listo para firmar?", True, WHITE)
-            surface.blit(lbl, (WIDTH//2 - lbl.get_width()//2, 150))
-            
-            # Review card
-            card = pygame.Rect(WIDTH//2 - 200, 200, 400, 250)
+            surface.blit(lbl, (WIDTH//2 - lbl.get_width()//2, 120))
+
+            from entities.player_appearance import draw_player_avatar
+            app_dict = self._get_custom_appearance_dict()
+
+            # Review Card with Avatar preview
+            card = pygame.Rect(WIDTH//2 - 280, 170, 560, 290)
             pygame.draw.rect(surface, (25, 30, 50), card, border_radius=20)
             pygame.draw.rect(surface, UI_ACCENT, card, 3, border_radius=20)
-            
+
+            # Left Avatar display
+            avatar_x = card.left + 100
+            draw_player_avatar(surface, avatar_x, card.centery - 10, app_dict, scale=3.0, team_color=(0, 200, 150), number="10")
+
+            # Right Player Info
             p_name = self.font_btn.render(self.player_name, True, WHITE)
-            surface.blit(p_name, (card.centerx - p_name.get_width()//2, card.top + 30))
-            
+            surface.blit(p_name, (card.left + 220, card.top + 25))
+
             details = [
+                f"Nacionalidad: {self.COUNTRY_NAMES.get(self.COUNTRIES[getattr(self, 'nat_idx', 0)], '')}",
                 f"Equipo: {self.assigned_team['name'] if self.assigned_team else '---'}",
                 f"Posición: {self.positions[self.pos_idx]}",
                 f"Ídolo: {self.legends[self.idol_idx]['name'] if self.legends else 'Nadie'}",
                 f"Dificultad: {DIFFICULTY_NAMES[getattr(self, 'diff_idx', 2)]}"
             ]
-            
+
             for i, d in enumerate(details):
                 ds = self.font_text.render(d, True, (200, 200, 200))
-                surface.blit(ds, (card.left + 40, card.top + 80 + i * 35))
+                surface.blit(ds, (card.left + 220, card.top + 75 + i * 35))
 
         # Footer hints
         hint = "ENTER para continuar | ESC para volver"

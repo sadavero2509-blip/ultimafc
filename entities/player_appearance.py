@@ -252,3 +252,84 @@ def draw_procedural_hair(surface, hx, hy, head_r, hair_style, hair_color, aim_di
         # Style 7: Calvo / Rapado al cero (con sombra de cuero cabelludo)
         highlight = (min(255, hair_color[0]+80), min(255, hair_color[1]+80), min(255, hair_color[2]+80))
         pygame.draw.arc(surface, highlight, (hx - head_r + 2, hy - head_r + 1, head_r, head_r), 0.5, 2.2, 1)
+
+def draw_player_avatar(surface, center_x, center_y, appearance_dict, scale=2.5, team_color=(0, 200, 150), secondary_color=(255, 255, 255), number="10"):
+    """Dibuja un avatar completo y detallado del jugador para vistas de menú y vista previa."""
+    skin_color = appearance_dict.get("skin_color", (245, 205, 172))
+    skin_shadow = appearance_dict.get("skin_shadow", (200, 160, 130))
+    hair_color = appearance_dict.get("hair_color", (20, 20, 20))
+    hair_style = appearance_dict.get("hair_style", 0)
+    boot_l = appearance_dict.get("boot_color_l", (50, 255, 50))
+    boot_r = appearance_dict.get("boot_color_r", (255, 100, 0))
+    has_beard = appearance_dict.get("has_beard", False)
+    has_headband = appearance_dict.get("has_headband", False)
+
+    r = int(12 * scale)
+    cx, cy = int(center_x), int(center_y)
+
+    # Sombra del jugador en el suelo
+    shadow_surf = pygame.Surface((r * 4, r * 1.5), pygame.SRCALPHA)
+    pygame.draw.ellipse(shadow_surf, (0, 0, 0, 80), (0, 0, r * 4, r * 1.5))
+    surface.blit(shadow_surf, (cx - r * 2, cy + int(r * 2.8)))
+
+    # Piernas y Botas
+    leg_w = max(2, int(3 * scale / 2))
+    leg_len = int(14 * scale)
+    lx = cx - int(r * 0.4)
+    rx = cx + int(r * 0.4)
+    hip_y = cy + int(r * 0.8)
+
+    # Pierna Izquierda
+    pygame.draw.line(surface, skin_color, (lx, hip_y), (lx, hip_y + leg_len // 2), leg_w)
+    pygame.draw.line(surface, team_color, (lx, hip_y + leg_len // 2), (lx, hip_y + leg_len), leg_w)
+    pygame.draw.ellipse(surface, boot_l, (lx - max(2, int(2 * scale)), hip_y + leg_len - max(1, int(2 * scale)), max(5, int(6 * scale)), max(4, int(4 * scale))))
+
+    # Pierna Derecha
+    pygame.draw.line(surface, skin_color, (rx, hip_y), (rx, hip_y + leg_len // 2), leg_w)
+    pygame.draw.line(surface, team_color, (rx, hip_y + leg_len // 2), (rx, hip_y + leg_len), leg_w)
+    pygame.draw.ellipse(surface, boot_r, (rx - max(2, int(2 * scale)), hip_y + leg_len - max(1, int(2 * scale)), max(5, int(6 * scale)), max(4, int(4 * scale))))
+
+    # Torso (Camiseta)
+    torso_w = int(r * 1.5)
+    torso_h = int(r * 1.4)
+    torso_rect = pygame.Rect(cx - torso_w // 2, cy - torso_h // 3, torso_w, torso_h)
+    pygame.draw.rect(surface, team_color, torso_rect, border_radius=max(3, int(4 * scale)))
+    pygame.draw.rect(surface, secondary_color, torso_rect, max(1, int(scale)), border_radius=max(3, int(4 * scale)))
+
+    # Número en camiseta
+    try:
+        font_num = pygame.font.SysFont("Impact", max(10, int(11 * scale)))
+        num_s = font_num.render(str(number), True, secondary_color)
+        surface.blit(num_s, (cx - num_s.get_width() // 2, cy + int(r * 0.1)))
+    except:
+        pass
+
+    # Brazos
+    arm_w = max(2, int(2.5 * scale))
+    arm_len = int(10 * scale)
+    lax = cx - torso_w // 2 - 2
+    rax = cx + torso_w // 2 + 2
+    arm_y = cy - torso_h // 4
+    pygame.draw.line(surface, skin_color, (lax, arm_y), (lax - int(3 * scale), arm_y + arm_len), arm_w)
+    pygame.draw.line(surface, skin_color, (rax, arm_y), (rax + int(3 * scale), arm_y + arm_len), arm_w)
+
+    # Cabeza
+    head_r = int(r * 0.65)
+    hx = cx
+    hy = cy - torso_h // 2 - head_r // 2
+    pygame.draw.circle(surface, skin_shadow, (hx + 1, hy + 1), head_r)
+    pygame.draw.circle(surface, skin_color, (hx, hy), head_r)
+    pygame.draw.circle(surface, (10, 10, 10), (hx, hy), head_r, max(1, int(1 * scale)))
+
+    # Cabello
+    aim_dummy = pygame.math.Vector2(0, 1)
+    draw_procedural_hair(surface, hx, hy, head_r, hair_style, hair_color, aim_dummy)
+
+    # Barba y Cinta
+    if has_beard:
+        beard_col = (max(0, skin_color[0]-60), max(0, skin_color[1]-55), max(0, skin_color[2]-50))
+        pygame.draw.arc(surface, beard_col, (hx - head_r + 1, hy - 1, (head_r - 1) * 2, head_r), 3.14, 6.28, max(1, int(1.5 * scale)))
+
+    if has_headband:
+        pygame.draw.line(surface, secondary_color, (hx - head_r + 1, hy - head_r + 4), (hx + head_r - 1, hy - head_r + 4), max(1, int(2 * scale)))
+
