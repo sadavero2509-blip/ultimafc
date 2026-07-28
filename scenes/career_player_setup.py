@@ -185,6 +185,8 @@ class CareerPlayerSetupScene:
             if l.get("nat") == nat: score += 5
             return score
             
+        all_legends.sort(key=legend_score, reverse=True)
+        self.legends = all_legends
         self.idol_idx = 0
 
     def _handle_step_idol(self, event):
