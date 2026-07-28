@@ -615,7 +615,9 @@ class CareerSocialScene:
                 
                 # Choice number + text (truncate if too long)
                 ch_prefix = f"{j + 1}. "
-                ch_text = ch_prefix + c["text"]
+                c_str = c.get("text") if isinstance(c, dict) else (c if isinstance(c, str) else str(c))
+                if not c_str: c_str = str(c)
+                ch_text = ch_prefix + c_str
                 max_text_w = ch_rect.width - 30
                 # Truncate to fit
                 while self.font_small.size(ch_text)[0] > max_text_w and len(ch_text) > 10:
@@ -645,7 +647,9 @@ class CareerSocialScene:
             reply_idx = active_dm.get("reply_selected")
             if reply_idx is not None and reply_idx < len(active_dm.get("choices", [])):
                 sel_choice = active_dm["choices"][reply_idx]
-                replied_txt = f"Respondido: \"{sel_choice['text']}\""
+                sel_str = sel_choice.get("text") if isinstance(sel_choice, dict) else (sel_choice if isinstance(sel_choice, str) else str(sel_choice))
+                if not sel_str: sel_str = str(sel_choice)
+                replied_txt = f'Respondido: "{sel_str}"'
                 if len(replied_txt) > 42: replied_txt = replied_txt[:39] + "..."
             else:
                 replied_txt = "Conversación finalizada."

@@ -1712,8 +1712,7 @@ class CareerManager:
         
         choice = dm["choices"][choice_idx]
         
-        # Apply consequences
-        effects = choice.get("effects", {})
+        effects = choice.get("effects", {}) if isinstance(choice, dict) else {}
         if "money" in effects:
             self.career_stats["money"] = round(self.career_stats.get("money", 0.0) + effects["money"], 4)
         if "prestige" in effects:
