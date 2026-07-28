@@ -196,143 +196,137 @@ def get_player_appearance(player_data):
     }
 
 def draw_procedural_hair(surface, hx, hy, head_r, hair_style, hair_color, aim_dir):
-    """Dibuja los 8 estilos de cabello mejorados y realistas."""
-    # Color de sombra para dar volumen
-    shadow = (max(0, hair_color[0]-35), max(0, hair_color[1]-35), max(0, hair_color[2]-30))
-    highlight = (min(255, hair_color[0]+40), min(255, hair_color[1]+40), min(255, hair_color[2]+35))
-    r = head_r
+    """Dibuja 8 estilos de cabello realistas que se ajustan al cuero cabelludo con línea de frente y textura natural."""
+    r = float(head_r)
+    shadow = (max(0, hair_color[0]-40), max(0, hair_color[1]-40), max(0, hair_color[2]-35))
+    highlight = (min(255, hair_color[0]+45), min(255, hair_color[1]+45), min(255, hair_color[2]+40))
 
     if hair_style == 0:
-        # Style 0: Corte Clásico Corto (tipo futbolista europeo)
-        # Capa base que cubre la parte superior de la cabeza
-        pygame.draw.ellipse(surface, hair_color, (hx - r, hy - r - int(r*0.3), r*2, int(r*1.3)))
-        # Sombra lateral para dar profundidad
-        pygame.draw.ellipse(surface, shadow, (hx - r + 2, hy - r - int(r*0.2), r*2 - 4, int(r*0.9)))
-        # Brillo sutil en la parte superior
-        pygame.draw.arc(surface, highlight, (hx - int(r*0.5), hy - r - int(r*0.25), r, int(r*0.6)), 0.3, 2.8, 1)
+        # Style 0: Corte Corto Clásico (Comb-over / Crop corto)
+        # Capa base que cubre la coronilla y sienes (sin abultar arriba)
+        pygame.draw.circle(surface, hair_color, (hx, hy - int(r * 0.15)), int(r * 0.98))
+        # Línea del cabello en la frente (entradas naturales)
+        pts_hairline = [
+            (int(hx - r * 0.85), int(hy - r * 0.1)),
+            (int(hx - r * 0.65), int(hy - r * 0.4)),
+            (int(hx - r * 0.2), int(hy - r * 0.45)),
+            (int(hx + r * 0.2), int(hy - r * 0.42)),
+            (int(hx + r * 0.65), int(hy - r * 0.38)),
+            (int(hx + r * 0.85), int(hy - r * 0.1)),
+            (int(hx + r * 0.95), int(hy - r * 0.5)),
+            (int(hx), int(hy - r * 1.08)),
+            (int(hx - r * 0.95), int(hy - r * 0.5)),
+        ]
+        pygame.draw.polygon(surface, hair_color, pts_hairline)
+        # Sombra de patillas y lados
+        pygame.draw.arc(surface, shadow, (int(hx - r), int(hy - r), int(r * 2), int(r * 2)), 0.6, 2.5, max(1, int(r * 0.15)))
+        # Brillo sutil de peinado
+        pygame.draw.arc(surface, highlight, (int(hx - r * 0.5), int(hy - r * 0.95), int(r), int(r * 0.5)), 0.5, 2.4, 1)
 
     elif hair_style == 1:
-        # Style 1: Afro Voluminoso (tipo Marcelo, Fellaini)
-        afro_r = int(r * 1.45)
-        # Capa exterior del afro - voluminosa
-        pygame.draw.circle(surface, shadow, (hx, hy - int(r*0.3)), afro_r)
-        pygame.draw.circle(surface, hair_color, (hx, hy - int(r*0.35)), afro_r - 1)
-        # Textura rizada: pequeños arcos distribuidos
-        for angle_step in range(0, 360, 30):
-            import math
-            rad = math.radians(angle_step)
-            tx = hx + int(math.cos(rad) * (afro_r - 3))
-            ty = hy - int(r*0.35) + int(math.sin(rad) * (afro_r - 3))
-            pygame.draw.circle(surface, shadow, (tx, ty), max(1, int(r * 0.18)))
-        # Brillo central superior
-        pygame.draw.circle(surface, highlight, (hx - int(r*0.15), hy - r - int(r*0.2)), max(1, int(r*0.25)))
+        # Style 1: Afro Corto Texturizado (Rizaditos apretados cerca del cuero cabelludo)
+        # Cobertura circular apretada (apenas 1.1x el radio de la cabeza)
+        pygame.draw.circle(surface, hair_color, (hx, hy - int(r * 0.2)), int(r * 1.12))
+        # Rizos perimetrales pequeños
+        import math
+        for i in range(12):
+            ang = math.pi * 0.15 + (math.pi * 0.7 / 11) * i
+            rx = hx + int(math.cos(ang) * r * 1.08)
+            ry = hy - int(r * 0.2) - int(math.sin(ang) * r * 1.08)
+            pygame.draw.circle(surface, shadow, (rx, ry), max(1, int(r * 0.22)))
+            pygame.draw.circle(surface, hair_color, (rx, ry), max(1, int(r * 0.18)))
+        # Línea de frente rizada
+        pygame.draw.ellipse(surface, hair_color, (int(hx - r * 0.75), int(hy - r * 0.45), int(r * 1.5), int(r * 0.4)))
 
     elif hair_style == 2:
-        # Style 2: Fade con Copete / Quiff (tipo Cristiano, Griezmann)
-        # Lados rapados - tono más oscuro y pegado a la cabeza
-        pygame.draw.arc(surface, shadow, (hx - r + 1, hy - r, r*2 - 2, r*2), 3.5, 5.9, max(1, int(r*0.15)))
-        # Copete voluminoso arriba, peinado hacia un lado
-        pts_top = [
-            (hx - int(r*0.7), hy - int(r*0.6)),
-            (hx - int(r*0.3), hy - r - int(r*0.5)),
-            (hx + int(r*0.2), hy - r - int(r*0.55)),
-            (hx + int(r*0.7), hy - r - int(r*0.3)),
-            (hx + int(r*0.85), hy - int(r*0.5)),
-            (hx + int(r*0.6), hy - int(r*0.4)),
-        ]
-        pygame.draw.polygon(surface, hair_color, pts_top)
-        pygame.draw.polygon(surface, shadow, pts_top, 1)
-        # Textura de mechones en el copete
-        pygame.draw.line(surface, shadow, (hx - int(r*0.1), hy - r - int(r*0.35)), (hx + int(r*0.5), hy - r - int(r*0.15)), 1)
-        pygame.draw.line(surface, shadow, (hx - int(r*0.3), hy - r - int(r*0.2)), (hx + int(r*0.3), hy - r - int(r*0.1)), 1)
+        # Style 2: Spiky / Cresta Corta Moderna (Pequeños mechones hacia arriba)
+        # Capa base rapada a los lados
+        pygame.draw.circle(surface, shadow, (hx, hy - int(r * 0.2)), int(r * 0.92))
+        pygame.draw.circle(surface, hair_color, (hx, hy - int(r * 0.25)), int(r * 0.9))
+        # Picos pequeños y naturales en la parte superior
+        spikes = [-0.5, -0.25, 0.0, 0.25, 0.5]
+        for sx in spikes:
+            base_x = hx + int(sx * r * 1.1)
+            peak_x = hx + int((sx + 0.05) * r * 1.1)
+            peak_y = hy - int(r * 1.25)
+            pts_spike = [
+                (base_x - int(r * 0.15), hy - int(r * 0.8)),
+                (peak_x, peak_y),
+                (base_x + int(r * 0.15), hy - int(r * 0.8))
+            ]
+            pygame.draw.polygon(surface, hair_color, pts_spike)
+            pygame.draw.polygon(surface, shadow, pts_spike, 1)
 
     elif hair_style == 3:
-        # Style 3: Man Bun / Moño alto (tipo Gareth Bale, Ibrahimovic)
-        # Base del cabello peinado hacia atrás
-        pygame.draw.ellipse(surface, hair_color, (hx - r, hy - r - int(r*0.2), r*2, int(r*1.1)))
-        # Lados más pegados
-        pygame.draw.ellipse(surface, shadow, (hx - r + 2, hy - int(r*0.6), r*2 - 4, int(r*0.7)))
-        # El moño: esfera en la parte trasera-superior
-        bun_x = hx - int(aim_dir.x * r * 0.6)
-        bun_y = hy - r - int(r * 0.15)
-        pygame.draw.circle(surface, shadow, (bun_x + 1, bun_y + 1), max(2, int(r * 0.4)))
-        pygame.draw.circle(surface, hair_color, (bun_x, bun_y), max(2, int(r * 0.38)))
-        # Elástico del moño
-        pygame.draw.circle(surface, (min(255, hair_color[0]+60), min(255, hair_color[1]+60), min(255, hair_color[2]+60)), (bun_x, bun_y), max(2, int(r * 0.38)), 1)
+        # Style 3: Moño Alto / Man Bun (Cabello tirante peinado hacia atrás con moño pequeño)
+        # Cabello pegado al cuero cabelludo
+        pygame.draw.circle(surface, hair_color, (hx, hy - int(r * 0.15)), int(r * 0.98))
+        # Textura de líneas de peinado hacia atrás
+        for offset in [-0.4, -0.15, 0.15, 0.4]:
+            pygame.draw.line(surface, shadow, (int(hx + offset * r), int(hy - r * 0.3)), (int(hx + offset * r * 0.5), int(hy - r * 0.9)), 1)
+        # Moño pequeño ajustado arriba/atrás
+        bun_x = hx - int(aim_dir.x * r * 0.4)
+        bun_y = hy - int(r * 1.1)
+        pygame.draw.circle(surface, shadow, (bun_x, bun_y), max(2, int(r * 0.32)))
+        pygame.draw.circle(surface, hair_color, (bun_x, bun_y), max(2, int(r * 0.28)))
+        pygame.draw.circle(surface, highlight, (bun_x, bun_y), max(2, int(r * 0.28)), 1)
 
     elif hair_style == 4:
-        # Style 4: Melena Larga Ondulada (tipo Cavani, Puyol)
-        # Masa principal del cabello en la parte superior
-        pygame.draw.ellipse(surface, hair_color, (hx - int(r*1.1), hy - r - int(r*0.35), int(r*2.2), int(r*1.4)))
-        # Mechones cayendo a los lados de la cara
+        # Style 4: Melena Media Ondulada (Cae suavemente sobre las orejas sin formar casco)
+        # Capa superior pegada a la cabeza
+        pygame.draw.circle(surface, hair_color, (hx, hy - int(r * 0.15)), int(r * 1.02))
+        # Caída lateral fluida (líneas finas y suaves)
         for side in [-1, 1]:
-            sx = hx + side * int(r * 0.85)
-            # Mechón lateral que cae
-            pts_strand = [
-                (sx, hy - int(r*0.5)),
-                (sx + side * int(r*0.25), hy - int(r*0.1)),
-                (sx + side * int(r*0.2), hy + int(r*0.5)),
-                (sx + side * int(r*0.05), hy + int(r*0.7)),
-                (sx - side * int(r*0.1), hy + int(r*0.4)),
-                (sx - side * int(r*0.15), hy - int(r*0.2)),
-            ]
-            pygame.draw.polygon(surface, hair_color, pts_strand)
-            pygame.draw.polygon(surface, shadow, pts_strand, 1)
-        # Textura de ondas en la parte superior
-        pygame.draw.arc(surface, shadow, (hx - int(r*0.6), hy - r - int(r*0.2), int(r*1.2), int(r*0.6)), 0.3, 2.9, 1)
+            x_base = hx + side * int(r * 0.8)
+            # Mechón delgado que bordea la cara
+            for layer in range(3):
+                lx1 = x_base + side * layer * 2
+                ly1 = hy - int(r * 0.4)
+                lx2 = x_base + side * (layer * 2 + 3)
+                ly2 = hy + int(r * 0.4)
+                pygame.draw.line(surface, hair_color, (lx1, ly1), (lx2, ly2), max(1, int(r * 0.2)))
+                pygame.draw.line(surface, shadow, (lx1 + side, ly1), (lx2 + side, ly2), 1)
 
     elif hair_style == 5:
-        # Style 5: Rastas / Dreads (tipo Gullit, Renato Sanches)
-        # Base del cabello
-        pygame.draw.ellipse(surface, hair_color, (hx - r, hy - r - int(r*0.25), r*2, int(r*1.2)))
-        # Rastas individuales cayendo
+        # Style 5: Rastas delgadas (Dreads delgadas cayendo por detrás y lados)
+        # Scalp base
+        pygame.draw.circle(surface, hair_color, (hx, hy - int(r * 0.15)), int(r * 0.95))
+        # Rastas individuales delgadas
         import math
-        num_dreads = 9
-        for i in range(num_dreads):
-            angle = math.pi * 0.15 + (math.pi * 0.7 / (num_dreads - 1)) * i
-            start_x = hx + int(math.cos(angle) * r * 0.7) - int(r*0.1)
-            start_y = hy - int(math.sin(angle) * r * 0.5)
-            # Cada rasta se curva ligeramente
-            sway = int(math.sin(i * 1.7) * r * 0.15)
-            mid_x = start_x + sway
-            mid_y = start_y + int(r * 0.4)
-            end_x = start_x + sway + int(math.sin(i * 0.8) * r * 0.1)
-            end_y = start_y + int(r * 0.8)
-            dread_w = max(1, int(r * 0.12))
-            pygame.draw.line(surface, hair_color, (start_x, start_y), (mid_x, mid_y), dread_w + 1)
-            pygame.draw.line(surface, shadow, (mid_x, mid_y), (end_x, end_y), dread_w)
-            # Cuenta dorada en la punta de algunas rastas
-            if i % 3 == 0:
-                pygame.draw.circle(surface, (218, 185, 50), (end_x, end_y), max(1, int(r * 0.07)))
+        dread_count = 7
+        for i in range(dread_count):
+            ang = math.pi * 0.2 + (math.pi * 0.6 / (dread_count - 1)) * i
+            dx = hx + int(math.cos(ang) * r * 0.75)
+            dy_start = hy - int(math.sin(ang) * r * 0.4)
+            dy_end = hy + int(r * 0.5)
+            sway_x = dx + int(math.sin(i * 1.5) * r * 0.12)
+            pygame.draw.line(surface, shadow, (dx, dy_start), (sway_x, dy_end), max(1, int(r * 0.15)))
+            pygame.draw.line(surface, hair_color, (dx, dy_start), (sway_x, dy_end), max(1, int(r * 0.11)))
+            if i % 2 == 0:
+                pygame.draw.circle(surface, (218, 185, 50), (sway_x, dy_end), max(1, int(r * 0.08)))
 
     elif hair_style == 6:
-        # Style 6: Undercut Peinado de Lado / Side Part (tipo Kroos, De Bruyne)
-        # Lados rapados (sombra pegada a la cabeza)
-        pygame.draw.arc(surface, shadow, (hx - r + 1, hy - r + 2, r*2 - 2, r*2 - 4), 3.6, 5.8, max(1, int(r*0.12)))
-        # Parte superior voluminosa peinada hacia la derecha
-        pts_side = [
-            (hx - int(r*0.8), hy - int(r*0.55)),
-            (hx - int(r*0.6), hy - r - int(r*0.3)),
-            (hx, hy - r - int(r*0.35)),
-            (hx + int(r*0.5), hy - r - int(r*0.25)),
-            (hx + int(r*0.9), hy - int(r*0.6)),
-            (hx + int(r*0.75), hy - int(r*0.35)),
-            (hx + int(r*0.3), hy - int(r*0.4)),
-            (hx - int(r*0.2), hy - int(r*0.45)),
+        # Style 6: Peinado de Lado / Undercut (Fade limpio con raya y tupé bajo)
+        # Lados rapados (sombra ligera pegada a la sien)
+        pygame.draw.arc(surface, shadow, (int(hx - r), int(hy - r), int(r * 2), int(r * 2)), 0.5, 2.6, max(1, int(r * 0.12)))
+        # Parte superior peineada a un lado
+        pts_part = [
+            (int(hx - r * 0.75), int(hy - r * 0.3)),
+            (int(hx - r * 0.5), int(hy - r * 0.85)),
+            (int(hx + r * 0.7), int(hy - r * 0.8)),
+            (int(hx + r * 0.85), int(hy - r * 0.3)),
+            (int(hx + r * 0.3), int(hy - r * 0.45)),
+            (int(hx - r * 0.3), int(hy - r * 0.45)),
         ]
-        pygame.draw.polygon(surface, hair_color, pts_side)
-        # Línea del raya (part line)
-        pygame.draw.line(surface, shadow, (hx - int(r*0.5), hy - r - int(r*0.1)), (hx - int(r*0.6), hy - int(r*0.5)), 1)
-        # Brillo en el lado peinado
-        pygame.draw.line(surface, highlight, (hx + int(r*0.1), hy - r - int(r*0.15)), (hx + int(r*0.6), hy - int(r*0.5)), 1)
+        pygame.draw.polygon(surface, hair_color, pts_part)
+        # Raya del peinado
+        pygame.draw.line(surface, shadow, (int(hx - r * 0.45), int(hy - r * 0.45)), (int(hx - r * 0.5), int(hy - r * 0.85)), 1)
+        pygame.draw.line(surface, highlight, (int(hx - r * 0.1), int(hy - r * 0.75)), (int(hx + r * 0.5), int(hy - r * 0.65)), 1)
 
     else:
-        # Style 7: Calvo / Rapado al cero (tipo Zidane, Henry)
-        # Sutil sombra de cuero cabelludo en la coronilla
-        pygame.draw.arc(surface, highlight, (hx - int(r*0.6), hy - r, int(r*1.2), int(r*0.8)), 0.4, 2.7, 1)
-        # Reflejo de luz en la calva
-        pygame.draw.arc(surface, (min(255, highlight[0]+30), min(255, highlight[1]+30), min(255, highlight[2]+30)),
-                        (hx - int(r*0.3), hy - r + int(r*0.1), int(r*0.6), int(r*0.4)), 0.6, 2.5, 1)
+        # Style 7: Rapado / Calvo (Sombra muy limpia del cuero cabelludo)
+        pygame.draw.arc(surface, shadow, (int(hx - r * 0.85), int(hy - r * 0.9), int(r * 1.7), int(r * 1.2)), 0.3, 2.8, 1)
+        pygame.draw.arc(surface, highlight, (int(hx - r * 0.5), int(hy - r * 0.95), int(r * 1.0), int(r * 0.6)), 0.5, 2.5, 1)
 
 def draw_player_avatar(surface, center_x, center_y, appearance_dict, scale=2.5, team_color=(0, 200, 150), secondary_color=(255, 255, 255), number="10"):
     """Dibuja un avatar completo y detallado del jugador para vistas de menú y vista previa."""
