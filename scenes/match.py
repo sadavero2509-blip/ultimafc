@@ -264,10 +264,11 @@ class MatchScene(BaseScene):
 
         # ── Left Team Setup ──
         self.left_field = []
+        left_is_cpu = (self.user_side != "left")  # True si left es el equipo CPU
         for player_data, (fx, fy) in zip(left_field_data, FORMATIONS.get(human_formation, FORMATIONS["4-3-3"])):
             player = FieldPlayer(pitch_rect.left + pitch_rect.width * fx, pitch_rect.top + pitch_rect.height * fy,
                                 self.left_team, player_data=player_data, side="left", formation_pos=(fx, fy))
-            player.apply_difficulty(self.difficulty)
+            player.apply_difficulty(self.difficulty, is_cpu=left_is_cpu)
             
             # Forzar control si es el usuario
             if self.user_side == "left" and user_p_data and player_data == user_p_data:
@@ -282,10 +283,11 @@ class MatchScene(BaseScene):
 
         if left_gk_data:
             self.left_gk = Goalkeeper(pitch_rect.left + 30, pitch_rect.centery, self.left_team, player_data=left_gk_data, side="left")
-            self.left_gk.apply_difficulty(self.difficulty)
+            self.left_gk.apply_difficulty(self.difficulty, is_cpu=left_is_cpu)
 
         # ── Right Team Setup ──
         self.right_field = []
+        right_is_cpu = (self.user_side != "right")  # True si right es el equipo CPU
         ai_formation = "4-3-3"
         right_formation = human_formation if self.user_side == "right" else ai_formation
         right_coords = FORMATIONS.get(right_formation, FORMATIONS["4-3-3"])
@@ -294,7 +296,7 @@ class MatchScene(BaseScene):
             inverted_fx = 1.0 - fx
             player = FieldPlayer(pitch_rect.right - pitch_rect.width * fx, pitch_rect.top + pitch_rect.height * fy,
                                 self.right_team, player_data=player_data, side="right", formation_pos=(inverted_fx, fy))
-            player.apply_difficulty(self.difficulty)
+            player.apply_difficulty(self.difficulty, is_cpu=right_is_cpu)
             
             # Forzar control si es el usuario
             if self.user_side == "right" and user_p_data and player_data == user_p_data:
@@ -309,7 +311,7 @@ class MatchScene(BaseScene):
 
         if right_gk_data:
             self.right_gk = Goalkeeper(pitch_rect.right - 30, pitch_rect.centery, self.right_team, player_data=right_gk_data, side="right")
-            self.right_gk.apply_difficulty(self.difficulty)
+            self.right_gk.apply_difficulty(self.difficulty, is_cpu=right_is_cpu)
             
         # Bench setup
         self.left_bench = [p for p in self.left_team.get("roster", []) if p not in left_starters_slice]
@@ -494,26 +496,37 @@ class MatchScene(BaseScene):
         for p in rival_field: p.is_active_ai = False
         sorted_rival = sorted(rival_field, key=lambda p: p.pos.distance_to(ball_pos))
         
-        # Cantidad de presionantes activos según dificultad
-        pressers_limit = 1
-        if self.difficulty >= 4: pressers_limit = 2
-        if self.difficulty >= 8: pressers_limit = 3
+        # Cantidad de presionantes activos según dificultad (CPU rival)
+        # Más presionantes activos = presión más intensa al usuario
+        rival_pressers = 1
+        if self.difficulty >= 3: rival_pressers = 2
+        if self.difficulty >= 7: rival_pressers = 3
+        if self.difficulty >= 10: rival_pressers = 4  # Leyenda: presión total
+        
+        # Distancia de presión escalada (más generosa = CPU presiona desde más lejos)
+        rival_press_dist = 180 + (self.difficulty * 35)  # 215 a 530px
 
-        for i in range(min(len(sorted_rival), pressers_limit)):
+        for i in range(min(len(sorted_rival), rival_pressers)):
             # Solo presionan si están a una distancia razonable (que aumenta con la dificultad)
-            if i == 0 or sorted_rival[i].pos.distance_to(ball_pos) < 200 + (self.difficulty * 25):
+            if i == 0 or sorted_rival[i].pos.distance_to(ball_pos) < rival_press_dist:
                 sorted_rival[i].is_active_ai = True
                 
         our_player_with_ball = next((p for p in our_all if p.has_ball), None)
         controlled = next((p for p in our_all if p.is_controlled), None)
         closest_left = min(our_field, key=lambda p: p.pos.distance_to(ball_pos))
         
+        # Aliados del usuario: presión moderada (no tan agresiva como CPU)
+        ally_pressers = 1
+        if self.difficulty >= 4: ally_pressers = 2
+        if self.difficulty >= 8: ally_pressers = 3
+        ally_press_dist = 200 + (self.difficulty * 20)  # 220 a 400px
+        
         for p in our_field: p.is_active_ai = False
         allies = [p for p in our_field if not p.is_controlled and not p.has_ball]
         if allies:
             sorted_allies = sorted(allies, key=lambda p: p.pos.distance_to(ball_pos))
-            for i in range(min(len(sorted_allies), pressers_limit)):
-                if i == 0 or sorted_allies[i].pos.distance_to(ball_pos) < 200 + (self.difficulty * 25):
+            for i in range(min(len(sorted_allies), ally_pressers)):
+                if i == 0 or sorted_allies[i].pos.distance_to(ball_pos) < ally_press_dist:
                     sorted_allies[i].is_active_ai = True
         
         from data.career_manager import career_manager

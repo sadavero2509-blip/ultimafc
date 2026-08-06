@@ -56,15 +56,35 @@ class Goalkeeper:
         self._anim_phase = random.random() * 6.28318530718
         self._match_scene_ref = None  # Referencia efímera para efectos visuales (goal_freeze)
         
-    def apply_difficulty(self, difficulty):
+    def apply_difficulty(self, difficulty, is_cpu=True):
+        """Escala las habilidades del portero basándose en el nivel (1-10).
+        is_cpu=True para el portero rival (escala agresiva), False para el portero del usuario."""
         self.difficulty = difficulty
-        # Scale dive speed and reaction time — GKs are now much stronger
-        diff_mult = 0.82 + (difficulty * 0.05) # 0.87 to 1.32 (was 0.84 to 1.2)
+        self.is_cpu_team = is_cpu
+        
+        # Scale dive speed and reaction time
+        if is_cpu:
+            # CPU GK: escalado agresivo — portero rival es una muralla en niveles altos
+            diff_mult = 0.80 + (difficulty * 0.06)  # 0.86 a 1.40
+            self._react_interval = max(0.015, 0.24 - (difficulty * 0.023))  # 0.217s a 0.015s
+        else:
+            # User GK: escalado moderado — competente pero no invencible
+            diff_mult = 0.84 + (difficulty * 0.045)  # 0.885 a 1.29
+            self._react_interval = max(0.04, 0.22 - (difficulty * 0.018))  # 0.202s a 0.04s
+        
         self.dive_speed *= diff_mult
-        self._react_interval = max(0.02, 0.22 - (difficulty * 0.022)) # 0.198s to 0.02s (faster)
         
         # Catch bonus: higher difficulty = GK catches more shots instead of parrying
-        self.catch_bonus = difficulty * 3  # 3 to 30 extra speed threshold
+        if is_cpu:
+            self.catch_bonus = difficulty * 4.0  # 4 to 40 extra speed threshold (was *3)
+        else:
+            self.catch_bonus = difficulty * 2.5  # 2.5 to 25
+        
+        # --- 1v1 Rush Logic (CPU GK en niveles altos) ---
+        # Qué tan agresivamente sale el portero en un 1v1 (achique)
+        self.rush_aggression = max(0.0, (difficulty - 5) * 0.12) if is_cpu else 0.0  # 0% L1-5, 12%-60% L6-10
+        # Distancia máxima de rush aumentada en niveles altos
+        self.rush_max_dist = 20 + (difficulty * 4 if is_cpu else difficulty * 2)  # 24-60 CPU, 22-40 user
         
         # Initialize stats if needed (already done in __init__, but keep for safety if reset)
         self.match_stats = {
@@ -196,13 +216,16 @@ class Goalkeeper:
                     self.pos += direction * self.dive_speed * dt
             else:
                 # ── Lógica de Achique con RETARDO DE REACCIÓN ──
-                # El portero solo recalcula su posición ideal cada ~0.4s
-                # Esto crea ventanas donde el palo lejano queda libre
+                # El portero solo recalcula su posición ideal cada cierto intervalo
+                # (más rápido en niveles altos de CPU)
                 self._react_timer += dt
                 
                 if self._react_timer >= self._react_interval:
                     self._react_timer = 0.0
                     goal_center = pygame.math.Vector2(self.home_x, pitch_rect.centery)
+                    rush_max = getattr(self, 'rush_max_dist', 20)
+                    rush_agg = getattr(self, 'rush_aggression', 0.0)
+                    is_cpu = getattr(self, 'is_cpu_team', True)
                     
                     if dist_to_ball > 400:
                         self._current_target = goal_center + pygame.math.Vector2(5 if self.side == "left" else -5, 0)
@@ -210,11 +233,34 @@ class Goalkeeper:
                         to_ball_dir = (ball.pos - goal_center)
                         if to_ball_dir.length() > 0:
                             to_ball_dir = to_ball_dir.normalize()
-                        rush_dist = min(20, max(0, 300 - dist_to_ball) * 0.08)
+                        
+                        # Rush base escalado por dificultad
+                        rush_factor = 0.08 + (rush_agg * 0.06)  # 0.08 base, hasta 0.116 en L10
+                        rush_dist = min(rush_max, max(0, 300 - dist_to_ball) * rush_factor)
+                        
+                        # --- 1v1 RUSH AGRESIVO (CPU GK en niveles altos) ---
+                        # Si el balón está muy cerca y viene un atacante solo, salir agresivamente
+                        if is_cpu and rush_agg > 0 and dist_to_ball < 200:
+                            # Evaluar si es una situación de 1v1 (balón conducido hacia nosotros)
+                            ball_coming = False
+                            if self.side == "left" and ball.vel.x < -20:
+                                ball_coming = True
+                            elif self.side == "right" and ball.vel.x > 20:
+                                ball_coming = True
+                            
+                            if ball_coming and random.random() < rush_agg:
+                                # Achique agresivo: salir más lejos para cerrar ángulo
+                                rush_dist = min(rush_max * 1.5, max(rush_dist, (200 - dist_to_ball) * 0.25))
+                        
                         self._current_target = goal_center + to_ball_dir * rush_dist
 
                 # Moverse hacia el target guardado (puede estar desactualizado)
-                adaptive_speed = self.speed * (0.7 if dist_to_ball > 300 else 1.0)
+                # Velocidad lateral escalada por dificultad
+                speed_mult = 1.0
+                if getattr(self, 'is_cpu_team', True) and self.difficulty >= 7:
+                    speed_mult = 1.0 + (self.difficulty - 7) * 0.08  # 1.0 a 1.24 en L10
+                
+                adaptive_speed = self.speed * (0.7 if dist_to_ball > 300 else 1.0) * speed_mult
                 
                 diff_y = self._current_target.y - self.pos.y
                 if abs(diff_y) > 5:

@@ -73,26 +73,55 @@ class FieldPlayer:
         self.is_injured = False
         self.injury_severity = 0 # 0-100
 
-    def apply_difficulty(self, difficulty):
-        """Escala la IA de forma realista basándose en el nivel (1-10)."""
+    def apply_difficulty(self, difficulty, is_cpu=True):
+        """Escala la IA de forma realista basándose en el nivel (1-10).
+        is_cpu=True para el equipo rival (escala agresiva), False para aliados del usuario."""
         self.difficulty = difficulty
+        self.is_cpu_team = is_cpu
         
         # Curva de velocidad: Niveles bajos son lentos, niveles altos son muy atléticos
         # 1-3: Amateur, 4-6: Profesional, 7-9: Clase Mundial, 10: Leyenda
-        diff_mult = 0.72 + (self.difficulty * 0.06) # 0.78 a 1.32
+        if is_cpu:
+            # CPU rival: escalado agresivo, curva empinada
+            diff_mult = 0.70 + (self.difficulty * 0.065) # 0.765 a 1.35
+        else:
+            # Aliados del usuario: escalado suave, competentes pero no superhéroes
+            diff_mult = 0.80 + (self.difficulty * 0.04) # 0.84 a 1.20
         self.ai_speed *= diff_mult
         
         # Tiempo de reacción: cuánto tarda en 'ver' que el balón cambió de dueño o dirección
-        self.reaction_delay = max(0.03, 0.50 - (self.difficulty * 0.05)) 
+        if is_cpu:
+            self.reaction_delay = max(0.02, 0.48 - (self.difficulty * 0.046)) # 0.434s a 0.02s
+        else:
+            self.reaction_delay = max(0.08, 0.45 - (self.difficulty * 0.038)) # ~0.41s a 0.07s
         
         # Probabilidad de robo: reforzada para defensas más fuertes
-        self.tackle_prob = 0.02 + (self.difficulty * 0.016) # 3.6% a 18% (era 2.2% a 13%)
+        if is_cpu:
+            self.tackle_prob = 0.02 + (self.difficulty * 0.022) # 4.2% a 24%
+        else:
+            self.tackle_prob = 0.02 + (self.difficulty * 0.012) # 3.2% a 14%
         
         # Error de IA: Probabilidad de fallar la dirección de un pase o tiro
-        self.ai_error_rate = max(0.02, 0.40 - (self.difficulty * 0.04))
+        if is_cpu:
+            self.ai_error_rate = max(0.01, 0.42 - (self.difficulty * 0.042)) # 0.378 a 0.01
+        else:
+            self.ai_error_rate = max(0.04, 0.38 - (self.difficulty * 0.035)) # 0.345 a 0.04
         
         # Agresividad defensiva: qué tan rápido retroceden los defensas
-        self.def_aggression = 0.6 + (self.difficulty * 0.06) # 0.66 a 1.20
+        if is_cpu:
+            self.def_aggression = 0.5 + (self.difficulty * 0.08) # 0.58 a 1.30
+        else:
+            self.def_aggression = 0.6 + (self.difficulty * 0.05) # 0.65 a 1.10
+        
+        # --- Nuevos atributos de IA inteligente (solo para CPU en niveles altos) ---
+        # Probabilidad de intentar pase al hueco (through-ball) en lugar de pase normal
+        self.ai_through_ball_chance = max(0.0, (self.difficulty - 5) * 0.08) if is_cpu else 0.0  # 0% L1-5, 8%-40% L6-10
+        # Probabilidad de pase de primera (one-touch) bajo presión
+        self.ai_one_touch_chance = max(0.0, (self.difficulty - 4) * 0.07) if is_cpu else 0.0  # 0% L1-4, 7%-42% L5-10
+        # Capacidad evasiva al driblear bajo presión
+        self.ai_evasion_skill = max(0.0, (self.difficulty - 6) * 0.12) if is_cpu else 0.0  # 0% L1-6, 12%-48% L7-10
+        # Precisión clínica de tiro (buscar esquinas del arco)
+        self.ai_clinical_shot = max(0.0, (self.difficulty - 5) * 0.10) if is_cpu else 0.0  # 0% L1-5, 10%-50% L6-10
 
     def get_formation_world_pos(self, pitch_rect, ball_pos, my_team_has_ball, match_scene=None):
         """Calcula la posición táctica basándose en el rol del jugador (Defensa, Medio, Ataque)."""
@@ -623,31 +652,47 @@ class FieldPlayer:
 
             target = None
             if self.state == self.STATE_CHASE:
-                # Agresividad de persecución escalada por dificultad
-                chase_boost = 1.05 + (self.difficulty * 0.02) # 1.07 a 1.25
+                # Agresividad de persecución escalada por dificultad (curva más empinada)
+                chase_boost = 1.02 + (self.difficulty * 0.03) # 1.05 a 1.32
                 speed = self.ai_speed * chase_boost
 
                 if not self.has_ball:
                     if self.is_active_ai:
                         # IA Principal: Persecución Directa (Agresividad total) al balón
                         target = ball.pos
+                        
+                        # En niveles altos, la IA CPU anticipa la dirección del balón
+                        if getattr(self, 'is_cpu_team', True) and self.difficulty >= 7:
+                            ball_future = ball.pos + ball.vel.normalize() * min(40, dist_to_ball * 0.15) if ball.vel.length() > 50 else ball.pos
+                            target = ball_future
                     else:
                         # IA Secundaria/Apoyo: Contención (Defense Jockeying)
                         # Niveles altos contienen más cerca y con más presión
-                        jockey_dist = max(25, 60 - (self.difficulty * 3))
+                        jockey_dist = max(18, 65 - (self.difficulty * 4.5)) # 60.5 a 20 (más ajustado)
                         my_goal_pos = pygame.math.Vector2(pitch_rect.left, pitch_rect.centery) if self.side == "left" else pygame.math.Vector2(pitch_rect.right, pitch_rect.centery)
                         jockey_vector = (my_goal_pos - ball.pos)
                         if jockey_vector.length() > 0:
                             jockey_vector = jockey_vector.normalize() * jockey_dist 
                         target = ball.pos + jockey_vector
+                        
+                        # En niveles altos, los defensas CPU cubren líneas de pase
+                        if getattr(self, 'is_cpu_team', True) and self.difficulty >= 8 and opponents:
+                            # Buscar si hay un atacante rival cercano al que cubrir
+                            nearest_attacker = min(opponents, key=lambda o: self.pos.distance_to(o.pos))
+                            if self.pos.distance_to(nearest_attacker.pos) < 200:
+                                # Interponerse entre el atacante y el balón
+                                interception_pos = (nearest_attacker.pos + ball.pos) * 0.5
+                                target = interception_pos
                     
                     # Si está lo suficentemente cerca, intentar robar con más decisión
-                    if dist_to_ball < 60:
+                    tackle_range = 60 + (self.difficulty * 2 if getattr(self, 'is_cpu_team', True) else 0) # Más rango en niveles altos
+                    if dist_to_ball < tackle_range:
                         speed = self.ai_speed * 0.9 
                         prob = getattr(self, "tackle_prob", 0.05)
                         if self.kick_cooldown <= 0 and random.random() < prob: 
                             self.tackle_timer = TACKLE_DURATION
-                            self.kick_cooldown = 0.8 # Menos cooldown para IA difícil para que presione más
+                            # Cooldown reducido en niveles altos para presión continua
+                            self.kick_cooldown = max(0.4, 0.9 - (self.difficulty * 0.05))
                 else:
                     target = ball.pos
 
@@ -667,6 +712,7 @@ class FieldPlayer:
         if self.has_ball:
             goal_pos = self._get_rival_goal(pitch_rect)
             dist_to_goal = self.pos.distance_to(goal_pos)
+            is_cpu = getattr(self, 'is_cpu_team', True)
             
             # Análisis del entorno
             near_top_edge = self.pos.y < pitch_rect.top + 70
@@ -674,11 +720,13 @@ class FieldPlayer:
             near_edge = near_top_edge or near_bot_edge
             
             closest_opp_dist = float('inf')
+            closest_opp = None
             if opponents:
                 closest_opp = min(opponents, key=lambda o: self.pos.distance_to(o.pos))
                 closest_opp_dist = self.pos.distance_to(closest_opp.pos)
             
             under_pressure = closest_opp_dist < 80
+            heavy_pressure = closest_opp_dist < 50  # Presión muy intensa
             
             # 1. Dirección de conducción inteligente
             ideal_push = (goal_pos - self.pos).normalize() if (goal_pos - self.pos).length() > 0 else self.direction
@@ -689,11 +737,27 @@ class FieldPlayer:
             elif near_bot_edge:
                 ideal_push = pygame.math.Vector2(ideal_push.x, -0.6).normalize()
             
-            # Si un defensa está encima, esquivarlo ligeramente
-            if under_pressure and opponents:
-                evasion = (self.pos - closest_opp.pos).normalize()
-                ideal_push = (ideal_push * 0.5 + evasion * 0.5)
-                if ideal_push.length() > 0: ideal_push = ideal_push.normalize()
+            # Si un defensa está encima, esquivarlo
+            if under_pressure and closest_opp:
+                evasion = (self.pos - closest_opp.pos)
+                if evasion.length() > 0:
+                    evasion = evasion.normalize()
+                
+                # --- EVASIÓN INTELIGENTE (CPU en niveles altos) ---
+                evasion_skill = getattr(self, 'ai_evasion_skill', 0.0)
+                if is_cpu and evasion_skill > 0 and random.random() < evasion_skill:
+                    # Corte lateral perpendicular al defensa (regate evasivo)
+                    perp = pygame.math.Vector2(-evasion.y, evasion.x)
+                    # Elegir el lado que lleva más hacia el arco
+                    if perp.dot(ideal_push) < 0:
+                        perp = -perp
+                    ideal_push = (ideal_push * 0.3 + perp * 0.7)
+                    if ideal_push.length() > 0: ideal_push = ideal_push.normalize()
+                    # Boost de velocidad durante el regate evasivo
+                    speed *= 1.12
+                else:
+                    ideal_push = (ideal_push * 0.5 + evasion * 0.5)
+                    if ideal_push.length() > 0: ideal_push = ideal_push.normalize()
             
             push_dir = ideal_push
             step = speed * dt
@@ -703,6 +767,25 @@ class FieldPlayer:
             
             # 2. Decisiones de acción (solo si no estamos en cooldown ni acabamos de recibir)
             if self.kick_cooldown <= 0 and self.receive_cooldown <= 0:
+                
+                # --- PASE DE PRIMERA BAJO PRESIÓN (CPU en niveles altos) ---
+                one_touch = getattr(self, 'ai_one_touch_chance', 0.0)
+                if is_cpu and heavy_pressure and one_touch > 0 and random.random() < one_touch and teammates:
+                    target_mate = self._find_ai_pass_target(teammates, opponents)
+                    if target_mate:
+                        pass_dir = (target_mate.pos - self.pos)
+                        pass_dist = pass_dir.length()
+                        if pass_dir.length() > 0: pass_dir = pass_dir.normalize()
+                        err = getattr(self, "ai_error_rate", 0.1) * 0.3  # Muy preciso en one-touch
+                        pass_dir.x += random.uniform(-err, err)
+                        pass_dir.y += random.uniform(-err, err)
+                        adapted_force = min(PASS_FORCE * 1.15, max(350, pass_dist * 2.0))
+                        ball.vel = pass_dir.normalize() * adapted_force
+                        ball.target_player = target_mate
+                        ball.owner = None
+                        self.kick_cooldown = 0.5  # Cooldown rápido one-touch
+                        return
+                
                 # PRIORIDAD 1: Tiro al arco (IA Agresiva)
                 can_shoot = dist_to_goal < 350 and not near_edge
                 if can_shoot:
@@ -712,21 +795,85 @@ class FieldPlayer:
                         kick_dir = (goal_pos - self.pos)
                         if kick_dir.length() > 0: kick_dir = kick_dir.normalize()
                         
-                        # Jitter basado en error_rate de la dificultad
                         err = getattr(self, "ai_error_rate", 0.1)
-                        kick_dir.x += random.uniform(-err, err)
-                        kick_dir.y += random.uniform(-err, err)
+                        clinical = getattr(self, 'ai_clinical_shot', 0.0)
                         
-                        ball.vel = kick_dir.normalize() * (KICK_FORCE * (1.05 + (1.0 - err) * 0.1))
+                        # --- TIRO CLÍNICO A ESQUINAS (CPU en niveles altos) ---
+                        if is_cpu and clinical > 0 and random.random() < clinical:
+                            # Buscar el palo más lejos del portero rival
+                            rival_gk = None
+                            if match_scene:
+                                rival_gk = match_scene.right_gk if self.side == "left" else match_scene.left_gk
+                            
+                            top_post_y = pitch_rect.centery - 48
+                            bot_post_y = pitch_rect.centery + 48
+                            
+                            if rival_gk:
+                                gk_y = rival_gk.pos.y
+                                # Apuntar al palo opuesto al portero
+                                if gk_y < pitch_rect.centery:
+                                    target_y = bot_post_y - random.uniform(3, 10)
+                                else:
+                                    target_y = top_post_y + random.uniform(3, 10)
+                            else:
+                                target_y = random.choice([top_post_y + 8, bot_post_y - 8])
+                            
+                            best_target = pygame.math.Vector2(goal_pos.x, target_y)
+                            kick_dir = (best_target - self.pos)
+                            if kick_dir.length() > 0: kick_dir = kick_dir.normalize()
+                            # Error mínimo en tiros clínicos
+                            kick_dir.x += random.uniform(-err * 0.2, err * 0.2)
+                            kick_dir.y += random.uniform(-err * 0.2, err * 0.2)
+                        else:
+                            # Tiro normal con jitter
+                            kick_dir.x += random.uniform(-err, err)
+                            kick_dir.y += random.uniform(-err, err)
+                        
+                        # Potencia escalada: tiros más fuertes en niveles altos
+                        power_mult = 1.05 + (1.0 - err) * 0.15
+                        ball.vel = kick_dir.normalize() * (KICK_FORCE * power_mult)
                         ball.target_player = None
                         ball.owner = None
-                        self.kick_cooldown = 1.0 # Cooldown post-tiro
+                        self.kick_cooldown = max(0.6, 1.0 - (self.difficulty * 0.04))  # Cooldown reducido en niveles altos
                         return
+                        
+                # PRIORIDAD 2: Pase (normal o through-ball)
                 elif teammates:
+                    # --- THROUGH-BALL INTELIGENTE (CPU en niveles altos) ---
+                    through_chance = getattr(self, 'ai_through_ball_chance', 0.0)
+                    if is_cpu and through_chance > 0 and random.random() < through_chance:
+                        through_target = self._find_ai_through_target(teammates, opponents, pitch_rect)
+                        if through_target:
+                            # Calcular punto futuro del corredor
+                            goal_dir_sign = 1 if self.side == "left" else -1
+                            run_dir = pygame.math.Vector2(goal_dir_sign, 0)
+                            lead_dist = max(40, min(80, self.pos.distance_to(through_target.pos) * 0.2))
+                            lead_pos = through_target.pos + run_dir * lead_dist
+                            
+                            to_space = (lead_pos - self.pos)
+                            if to_space.length() > 0:
+                                final_dir = to_space.normalize()
+                            else:
+                                final_dir = run_dir
+                            
+                            err = getattr(self, "ai_error_rate", 0.1) * 0.3
+                            final_dir.x += random.uniform(-err, err)
+                            final_dir.y += random.uniform(-err, err)
+                            
+                            dist_to_space = to_space.length()
+                            adapted_speed = max(400, min(750, 340 + dist_to_space * 0.8))
+                            ball.vel = final_dir.normalize() * adapted_speed
+                            ball.target_player = None
+                            ball.is_through_pass = True
+                            ball.owner = None
+                            self.kick_cooldown = 0.6
+                            return
+                    
+                    # Pase normal
                     target_mate = self._find_ai_pass_target(teammates, opponents)
                     if target_mate:
                         # IA favorece más el toque (passing) que la conducción solitaria
-                        pass_chance = 0.65 if under_pressure else 0.45
+                        pass_chance = 0.70 if under_pressure else (0.40 + self.difficulty * 0.03)
                         if random.random() < pass_chance:
                             pass_dir = (target_mate.pos - self.pos)
                             pass_dist = pass_dir.length()
@@ -741,7 +888,7 @@ class FieldPlayer:
                             ball.vel = pass_dir.normalize() * adapted_force
                             ball.target_player = target_mate
                             ball.owner = None
-                            self.kick_cooldown = 0.7 # Cooldown para evitar pases infinitos instantáneos
+                            self.kick_cooldown = max(0.45, 0.7 - (self.difficulty * 0.025))  # Pases más rápidos en niveles altos
                             return
                         else:
                             self._interact_with_ball(ball, dist_to_ball, effective_radius, speed, push_dir, match_scene)
@@ -908,6 +1055,58 @@ class FieldPlayer:
         if best_score > 1000 and random.random() < 0.6:
             return None
             
+        return best
+
+    def _find_ai_through_target(self, teammates, opponents, pitch_rect):
+        """Busca un compañero que esté haciendo una carrera al espacio detrás de la defensa rival."""
+        best = None
+        best_score = float('inf')
+        goal = self._get_rival_goal(pitch_rect)
+        side_sign = 1 if self.side == "left" else -1
+        
+        for mate in teammates:
+            if mate is self: continue
+            dist = self.pos.distance_to(mate.pos)
+            if dist < 80 or dist > 600: continue
+            
+            # Solo hacia adelante
+            depth_advance = (mate.pos.x - self.pos.x) * side_sign
+            if depth_advance < 30: continue  # Debe estar más adelantado
+            
+            mate_to_goal = mate.pos.distance_to(goal)
+            
+            # Verificar que no haya defensas rivales entre el compañero y el arco (offside-like check)
+            defenders_behind = 0
+            for opp in opponents:
+                opp_depth = (opp.pos.x - mate.pos.x) * side_sign
+                if opp_depth > 0:  # Rival está entre el compañero y el arco
+                    defenders_behind += 1
+            
+            # Menos defensas detrás = mejor oportunidad para through-ball
+            if defenders_behind > 2: continue  # Demasiados defensas, no vale la pena
+            
+            # Verificar que la línea de pase esté relativamente limpia
+            pass_dir = (mate.pos - self.pos)
+            is_safe = True
+            if pass_dir.length() > 0:
+                pass_dir_norm = pass_dir.normalize()
+                for opp in opponents:
+                    opp_dist = self.pos.distance_to(opp.pos)
+                    if opp_dist < dist:
+                        to_opp = (opp.pos - self.pos)
+                        if to_opp.length() > 0:
+                            dot = pass_dir_norm.dot(to_opp.normalize())
+                            if dot > 0.88 and opp_dist < 150:
+                                is_safe = False
+                                break
+            
+            if not is_safe: continue
+            
+            score = mate_to_goal + (defenders_behind * 200) - (depth_advance * 0.8)
+            if score < best_score:
+                best_score = score
+                best = mate
+        
         return best
 
     def _get_rival_goal(self, pitch_rect):
