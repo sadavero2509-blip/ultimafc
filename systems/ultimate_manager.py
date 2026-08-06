@@ -45,25 +45,11 @@ class UltimateManager:
             return f"http://{self.server_ip}:{self.server_port}/api/ultimate"
 
     def init_vars(self):
-        import os, json
-        # Cargar configuración de servidor
-        self.server_ip = "localhost" # Por defecto
-        self.server_port = 5001 # Por defecto
-        config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "server_config.json")
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r") as f:
-                    cfg = json.load(f)
-                    if "server_ip" in cfg:
-                        self.server_ip = cfg["server_ip"]
-                    elif "ip" in cfg:
-                        self.server_ip = cfg["ip"]
-                    if "port" in cfg:
-                        self.server_port = int(cfg["port"])
-            except: pass
-            
-        print(f"DEBUG: Servidor IP detectada: {self.server_ip}")
-        print(f"DEBUG: Servidor URL base: {self.server_url}")
+        from server_cfg import SERVER_IP, SERVER_PORT, SERVER_URL
+        self.server_ip = SERVER_IP
+        self.server_port = SERVER_PORT
+        print(f"[ULTIMATE] Servidor IP detectada: {self.server_ip}")
+        print(f"[ULTIMATE] Servidor URL base: {self.server_url}")
         self.team_name = "Mi Club"
         self.abbreviation = "MCU"
         self.badge = None
