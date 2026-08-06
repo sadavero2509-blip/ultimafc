@@ -175,9 +175,5 @@ class LoadingScene(MenuScene):
                 return
 
             if event.key == pygame.K_RETURN and self.can_continue:
-                if self.context.get("logged_in"):
-                    from .main_menu import MainMenuScene
-                    self.manager.transition_to(MainMenuScene)
-                else:
-                    from scenes.login import LoginScene
-                    self.manager.transition_to(LoginScene)
+                from .main_menu import MainMenuScene
+                self.manager.transition_to(MainMenuScene)
