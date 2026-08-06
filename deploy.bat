@@ -3,13 +3,13 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 :: ============================================
-::  DEPLOY AUTOMÁTICO - NeoFutbolArcade
+::  DEPLOY AUTOMÁTICO - Ultima FC 27
 ::  Compila, empaqueta, commitea y sube todo.
 :: ============================================
 
 echo.
 echo ╔══════════════════════════════════════════╗
-echo ║   DEPLOY AUTOMATICO - NeoFutbolArcade   ║
+echo ║   DEPLOY AUTOMATICO - Ultima FC 27      ║
 echo ╚══════════════════════════════════════════╝
 echo.
 
@@ -64,7 +64,7 @@ echo    [OK] Sintaxis verificada correctamente.
 echo.
 
 :: ── PASO 2: Compilar ejecutable ─────────────────────
-echo [2/5] Compilando NeoFutbolArcade.exe con PyInstaller...
+echo [2/5] Compilando UltimaFC27.exe con PyInstaller...
 .venv\Scripts\pyinstaller NeoFutbolArcade.spec --noconfirm --clean >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] PyInstaller falló. Abortando.
@@ -75,16 +75,17 @@ echo.
 
 :: ── PASO 3: Copiar a carpeta de release ─────────────
 echo [3/5] Copiando ejecutable a carpeta de distribución...
-copy /Y "dist\NeoFutbolArcade.exe" "dist\NeoFutbolArcade_Release\NeoFutbolArcade.exe" >nul
+if not exist "dist\UltimaFC27_Release" mkdir "dist\UltimaFC27_Release"
+copy /Y "dist\UltimaFC27.exe" "dist\UltimaFC27_Release\UltimaFC27.exe" >nul
 if errorlevel 1 (
     echo [ERROR] No se pudo copiar el ejecutable. Abortando.
     exit /b 1
 )
 
 :: Mostrar tamaño del archivo
-for %%A in ("dist\NeoFutbolArcade.exe") do (
+for %%A in ("dist\UltimaFC27.exe") do (
     set /a "SIZE_MB=%%~zA / 1048576"
-    echo    [OK] NeoFutbolArcade.exe (!SIZE_MB! MB) copiado a Release.
+    echo    [OK] UltimaFC27.exe (!SIZE_MB! MB) copiado a Release.
 )
 echo.
 
