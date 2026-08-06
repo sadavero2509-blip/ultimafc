@@ -470,25 +470,27 @@ class MainMenuScene(BaseScene):
         from systems.network import NetworkManager
         net = NetworkManager()
 
-        user_name = "Invitar/Offline"
+        user_name = "Invitado"
         creds_path = "saves/creds.json"
         if os.path.exists(creds_path):
             try:
                 import json
                 with open(creds_path, "r", encoding="utf-8") as f:
                     cdata = json.load(f)
-                    user_name = cdata.get("username", "Jugador")
+                    user_name = cdata.get("user", cdata.get("username", "Jugador"))
             except: pass
         elif net.connected:
-            user_name = "Usuario Conectado"
+            user_name = net.username or "Usuario Conectado"
+
+        is_online = net.connected or net.is_server_online()
 
         widget_w, widget_h = 240, 44
         rect = pygame.Rect(WIDTH - widget_w - 30, 15, widget_w, widget_h)
         pygame.draw.rect(surface, (20, 26, 42), rect, border_radius=10)
-        pygame.draw.rect(surface, UI_ACCENT if net.connected else (100, 110, 130), rect, 1, border_radius=10)
+        pygame.draw.rect(surface, UI_ACCENT if is_online else (100, 110, 130), rect, 1, border_radius=10)
 
         # Avatar
-        pygame.draw.circle(surface, UI_ACCENT if net.connected else (120, 120, 120), (rect.left + 22, rect.centery), 12)
+        pygame.draw.circle(surface, UI_ACCENT if is_online else (120, 120, 120), (rect.left + 22, rect.centery), 12)
         u_icon = self.font_hint.render("👤", True, (0, 0, 0))
         surface.blit(u_icon, (rect.left + 15, rect.centery - u_icon.get_height()//2))
 
@@ -496,8 +498,8 @@ class MainMenuScene(BaseScene):
         un = self.font_user.render(user_name[:14], True, WHITE)
         surface.blit(un, (rect.left + 42, rect.top + 4))
 
-        status_str = "ONLINE" if net.connected else "OFFLINE"
-        status_c = (0, 220, 120) if net.connected else (220, 100, 100)
+        status_str = "ONLINE" if is_online else "OFFLINE"
+        status_c = (0, 220, 120) if is_online else (220, 100, 100)
         ss = self.font_badge.render(f"● {status_str}  ·  [L] Cuenta", True, status_c)
         surface.blit(ss, (rect.left + 42, rect.top + 23))
 

@@ -151,6 +151,9 @@ class LoginScene(BaseScene):
         eh_surf = f_label.render(esc_hint, True, (150, 150, 180))
         surface.blit(eh_surf, eh_surf.get_rect(center=(WIDTH//2, 555)))
         
-        if not self.net.connected and not self.loading:
-            off_surf = f_label.render("[!] MODO OFFLINE DETECTADO (Reintentando...)", True, (255, 100, 100))
-            surface.blit(off_surf, off_surf.get_rect(center=(WIDTH//2, HEIGHT - 50)))
+        is_online = self.net.connected or self.net.is_server_online()
+        if is_online:
+            off_surf = f_label.render(f"[✓] SERVIDOR ONLINE: {self.net.server_url}", True, (0, 220, 120))
+        else:
+            off_surf = f_label.render(f"[!] SERVIDOR DESCONECTADO (Modo Offline)", True, (255, 100, 100))
+        surface.blit(off_surf, off_surf.get_rect(center=(WIDTH//2, HEIGHT - 50)))
