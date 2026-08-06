@@ -18,7 +18,7 @@ class CareerAgentScene:
             {"level": 0, "name": "Ninguno", "commission": 0, "price": 0, "desc": "Tú mismo negocias. Sin bonus de sueldo."},
             {"level": 1, "name": "Básico (Familiar)", "commission": 3, "price": 0.1, "desc": "Tu familia te ayuda. +15% sueldo base."},
             {"level": 2, "name": "Profesional", "commission": 5, "price": 0.5, "desc": "Agente con contactos. +30% sueldo base."},
-            {"level": 3, "name": "Top (Agente FIFA)", "commission": 7, "price": 2.0, "desc": "Agente de renombre. +45% sueldo base."},
+            {"level": 3, "name": "Top (Agente Elite)", "commission": 7, "price": 2.0, "desc": "Agente de renombre. +45% sueldo base."},
             {"level": 4, "name": "Leyenda (Agente Top)", "commission": 10, "price": 5.0, "desc": "El mejor del mundo. +60% sueldo base y mejores clubes."}
         ]
         

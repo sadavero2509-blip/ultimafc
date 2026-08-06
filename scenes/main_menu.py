@@ -336,7 +336,7 @@ class MainMenuScene(BaseScene):
         line_w = 400 + int(pulse * 60)
         pygame.draw.line(surface, UI_ACCENT, (WIDTH//2 - line_w//2, HEIGHT//2 - 25), (WIDTH//2 + line_w//2, HEIGHT//2 - 25), 3)
 
-        sub_str = "---  EA SPORTS STYLE FOOTBALL EXPERIENCE  ---"
+        sub_str = "---  ULTIMATE FOOTBALL EXPERIENCE 27  ---"
         sub_s = self.font_bold.render(sub_str, True, UI_TEXT_DIM)
         surface.blit(sub_s, (WIDTH//2 - sub_s.get_width()//2, HEIGHT//2 + 5))
 

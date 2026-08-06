@@ -551,14 +551,16 @@ def update_download(filepath):
     return send_from_directory(directory, filename)
 
 def _find_best_exe_path():
-    """Busca dinámicamente el ejecutable NeoFutbolArcade.exe en las rutas de desarrollo y distribución."""
+    """Busca dinámicamente el ejecutable UltimaFC27.exe en las rutas de desarrollo y distribución."""
     candidate_paths = [
+        os.path.join(UPDATE_DIR, "dist", "UltimaFC27_Release", "UltimaFC27.exe"),
+        os.path.join(UPDATE_DIR, "dist", "UltimaFC27.exe"),
+        os.path.join(UPDATE_DIR, "UltimaFC27.exe"),
         os.path.join(UPDATE_DIR, "dist", "NeoFutbolArcade_Release", "NeoFutbolArcade.exe"),
         os.path.join(UPDATE_DIR, "dist", "NeoFutbolArcade.exe"),
-        os.path.join(UPDATE_DIR, "NeoFutbolArcade.exe"),
         # Respaldos relativos al archivo actual
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dist", "NeoFutbolArcade_Release", "NeoFutbolArcade.exe"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dist", "NeoFutbolArcade.exe"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dist", "UltimaFC27_Release", "UltimaFC27.exe"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dist", "UltimaFC27.exe"),
     ]
     for path in candidate_paths:
         norm_path = os.path.normpath(path)

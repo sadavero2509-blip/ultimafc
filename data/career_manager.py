@@ -4517,7 +4517,7 @@ class CareerManager:
             {"level": 0, "name": "Ninguno", "commission": 0.0, "price": 0},
             {"level": 1, "name": "Básico (Familiar)", "commission": 0.03, "price": 0.1},
             {"level": 2, "name": "Intermedio (Profesional)", "commission": 0.05, "price": 0.5},
-            {"level": 3, "name": "Top (Agente FIFA)", "commission": 0.07, "price": 2.0},
+            {"level": 3, "name": "Top (Agente Elite)", "commission": 0.07, "price": 2.0},
             {"level": 4, "name": "Leyenda (Jorge Mendes Style)", "commission": 0.10, "price": 5.0}
         ]
         
