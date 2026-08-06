@@ -61,55 +61,138 @@ class PresentationScene:
         elif career_manager.league_id in ["AR", "BR", "CO"]: region_name = "Sudamérica"
 
         if self.award_name:
-            # (Keep award logic similar)
             if "Oro" in self.award_name:
                 pool = [
-                    {"q": f"¡Felicidades por el {self.award_name}! ¿Es el mejor día de tu vida?", "ans": [{"t": "Sin duda.", "res": "Es el mayor honor que un futbolista puede recibir. Un sueño total."}, {"t": "Muy especial.", "res": "Es un momento único, pero mañana toca seguir trabajando duro."}, {"t": "Para mi familia.", "res": "Más que por mí, me alegro por los que estuvieron en las malas."}]},
-                    {"q": "¿Crees que con esto ya tocaste el techo de tu carrera?", "ans": [{"t": "Para nada.", "res": "Este premio solo me da más hambre para seguir mejorando cada día."}, {"t": "He cumplido un ciclo.", "res": "Siento que he llegado a la cima, pero quiero mantenerme ahí."}, {"t": "Hay más metas.", "res": "Falta la Champions y el Mundial. Esto es solo el principio."}]},
-                    {"q": "¿A quién agradeces este reconocimiento?", "ans": [{"t": "A mis compañeros.", "res": "Sin ellos no hubiera metido ni la mitad de los goles."}, {"t": "A la afición.", "res": "Su apoyo me motiva a dejarme la piel en el campo cada domingo."}, {"t": "A mi esfuerzo.", "res": "He trabajado más que nadie para estar hoy en este estrado."}]}
+                    {"q": f"¡Felicidades por el {self.award_name}! ¿Es el mejor día de tu vida?", "ans": [
+                        {"t": "Sin duda.", "res": "Es el mayor honor que un futbolista puede recibir. Un sueño total.", "effects": {"prestige": 15, "fan_rel": 10, "coach_confidence": 5}},
+                        {"t": "Muy especial.", "res": "Es un momento único, pero mañana toca seguir trabajando duro.", "effects": {"coach_confidence": 10, "teammate_rel": 8, "prestige": 8}},
+                        {"t": "Para mi familia.", "res": "Más que por mí, me alegro por los que estuvieron en las malas.", "effects": {"fan_rel": 12, "teammate_rel": 10}}
+                    ]},
+                    {"q": "¿Crees que con esto ya tocaste el techo de tu carrera?", "ans": [
+                        {"t": "Para nada.", "res": "Este premio solo me da más hambre para seguir mejorando cada día.", "effects": {"coach_confidence": 8, "prestige": 10, "fan_rel": 6}},
+                        {"t": "He cumplido un ciclo.", "res": "Siento que he llegado a la cima, pero quiero mantenerme ahí.", "effects": {"prestige": 12, "coach_confidence": -2}},
+                        {"t": "Hay más metas.", "res": "Falta la Champions y el Mundial. Esto es solo el principio.", "effects": {"fan_rel": 10, "coach_confidence": 5, "teammate_rel": 5}}
+                    ]},
+                    {"q": "¿A quién agradeces este reconocimiento?", "ans": [
+                        {"t": "A mis compañeros.", "res": "Sin ellos no hubiera metido ni la mitad de los goles.", "effects": {"teammate_rel": 15, "coach_confidence": 5}},
+                        {"t": "A la afición.", "res": "Su apoyo me motiva a dejarme la piel en el campo cada domingo.", "effects": {"fan_rel": 15, "prestige": 5}},
+                        {"t": "A mi esfuerzo.", "res": "He trabajado más que nadie para estar hoy en este estrado.", "effects": {"prestige": 15, "teammate_rel": -4, "coach_confidence": 2}}
+                    ]}
                 ]
             elif "Joven" in self.award_name or "Golden Boy" in self.award_name:
                 pool = [
-                    {"q": "Ganador del Golden Boy... El futuro es el presente. ¿Cómo te sientes?", "ans": [{"t": "Pies en la tierra.", "res": "Es emocionante, pero queda muchísimo camino por recorrer. El trabajo duro apenas empieza."}, {"t": "Soy el mejor.", "res": "Trabajo para ser el número uno y este premio lo confirma. Vengo a marcar una época."}, {"t": "Gracias al club.", "res": "Sin la confianza de este equipo no estaría hoy aquí. Este premio es de mis compañeros."}]},
-                    {"q": "¿Sientes presión por ser considerado la gran promesa del fútbol mundial?", "ans": [{"t": "Es un privilegio.", "res": "La presión es un privilegio. Me motiva a demostrar por qué estoy en este lugar."}, {"t": "No leo la prensa.", "res": "Solo me enfoco en el balón y en lo que me pide el míster. Los elogios son pasajeros."}, {"t": "Poco a poco.", "res": "Aún soy joven, no hay que cargarme de demasiadas expectativas. Quiero disfrutar del fútbol."}]},
-                    {"q": "¿Cuál es tu próximo objetivo?", "ans": [{"t": "Ganar la Liga.", "res": "Los premios individuales están bien, pero quiero levantar trofeos con el equipo."}, {"t": "Seguir creciendo.", "res": "Mi meta es mejorar mis números de la temporada pasada y ser más decisivo."}, {"t": "Llegar a la selección.", "res": "Representar a mi país es lo máximo. Trabajaré para que el seleccionador me llame."}]}
+                    {"q": "Ganador del Golden Boy... El futuro es el presente. ¿Cómo te sientes?", "ans": [
+                        {"t": "Pies en la tierra.", "res": "Es emocionante, pero queda muchísimo camino por recorrer. El trabajo duro apenas empieza.", "effects": {"coach_confidence": 10, "teammate_rel": 8, "fan_rel": 5}},
+                        {"t": "Soy el mejor.", "res": "Trabajo para ser el número uno y este premio lo confirma. Vengo a marcar una época.", "effects": {"prestige": 20, "fan_rel": 12, "teammate_rel": -6, "coach_confidence": -3}},
+                        {"t": "Gracias al club.", "res": "Sin la confianza de este equipo no estaría hoy aquí. Este premio es de mis compañeros.", "effects": {"teammate_rel": 12, "coach_confidence": 8, "fan_rel": 6}}
+                    ]},
+                    {"q": "¿Sientes presión por ser considerado la gran promesa del fútbol mundial?", "ans": [
+                        {"t": "Es un privilegio.", "res": "La presión es un privilegio. Me motiva a demostrar por qué estoy en este lugar.", "effects": {"prestige": 12, "coach_confidence": 6, "fan_rel": 8}},
+                        {"t": "No leo la prensa.", "res": "Solo me enfoco en el balón y en lo que me pide el míster. Los elogios son pasajeros.", "effects": {"coach_confidence": 10, "teammate_rel": 5, "fan_rel": -3}},
+                        {"t": "Poco a poco.", "res": "Aún soy joven, no hay que cargarme de demasiadas expectativas. Quiero disfrutar del fútbol.", "effects": {"teammate_rel": 6, "coach_confidence": 5, "fan_rel": 4}}
+                    ]},
+                    {"q": "¿Cuál es tu próximo objetivo?", "ans": [
+                        {"t": "Ganar la Liga.", "res": "Los premios individuales están bien, pero quiero levantar trofeos con el equipo.", "effects": {"teammate_rel": 10, "coach_confidence": 8, "fan_rel": 8}},
+                        {"t": "Seguir creciendo.", "res": "Mi meta es mejorar mis números de la temporada pasada y ser más decisivo.", "effects": {"coach_confidence": 6, "prestige": 8}},
+                        {"t": "Llegar a la selección.", "res": "Representar a mi país es lo máximo. Trabajaré para que el seleccionador me llame.", "effects": {"fan_rel": 12, "prestige": 10}}
+                    ]}
                 ]
             else:
                 pool = [
-                    {"q": f"¡Ganador del {self.award_name}! ¿Cuál es el secreto de tu éxito?", "ans": [{"t": "Disciplina.", "res": "No hay magia, solo sudor y constancia cada entrenamiento. La disciplina vence al talento."}, {"t": "Mentalidad.", "res": "Nunca dar un balón por perdido es lo que marca la diferencia en la élite."}, {"t": "Talento puro.", "res": "Nací con este don y trato de perfeccionarlo día tras día. Amo este deporte."}]},
-                    {"q": "¿Es este el punto más alto de tu carrera profesional?", "ans": [{"t": "Solo el inicio.", "res": "Tengo hambre de más. Quiero que este sea el primero de muchos éxitos."}, {"t": "Un sueño hecho realidad.", "res": "Mirando atrás, todo el sacrificio ha valido la pena por este momento."}, {"t": "Lo colectivo importa.", "res": "Cambiaría este trofeo individual por un título con mi equipo sin dudarlo."}]}
+                    {"q": f"¡Ganador del {self.award_name}! ¿Cuál es el secreto de tu éxito?", "ans": [
+                        {"t": "Disciplina.", "res": "No hay magia, solo sudor y constancia cada entrenamiento. La disciplina vence al talento.", "effects": {"coach_confidence": 12, "teammate_rel": 6}},
+                        {"t": "Mentalidad.", "res": "Nunca dar un balón por perdido es lo que marca la diferencia en la élite.", "effects": {"fan_rel": 10, "coach_confidence": 8}},
+                        {"t": "Talento puro.", "res": "Nací con este don y trato de perfeccionarlo día tras día. Amo este deporte.", "effects": {"prestige": 15, "fan_rel": 8, "teammate_rel": -3}}
+                    ]},
+                    {"q": "¿Es este el punto más alto de tu carrera profesional?", "ans": [
+                        {"t": "Solo el inicio.", "res": "Tengo hambre de más. Quiero que este sea el primero de muchos éxitos.", "effects": {"prestige": 10, "coach_confidence": 6}},
+                        {"t": "Un sueño hecho realidad.", "res": "Mirando atrás, todo el sacrificio ha valido la pena por este momento.", "effects": {"fan_rel": 10, "prestige": 8}},
+                        {"t": "Lo colectivo importa.", "res": "Cambiaría este trofeo individual por un título con mi equipo sin dudarlo.", "effects": {"teammate_rel": 12, "coach_confidence": 8, "fan_rel": 6}}
+                    ]}
                 ]
         elif self.is_manager:
             pool = [
-                {"q": f"¿Qué significa para usted dirigir a una institución como el {self.team['name']}?", "ans": [{"t": "Un honor.", "res": "Es una de las instituciones más grandes del mundo. Vengo a ganar títulos y hacer historia."}, {"t": "Un reto.", "res": "Sé que las expectativas son altas, pero estamos listos para el desafío táctico."}, {"t": "Un sueño.", "res": "Siempre quise estar en este banquillo desde que era jugador. Hoy se hace realidad."}]},
-                {"q": "¿Qué estilo de juego piensa implementar en sus primeras semanas?", "ans": [{"t": "Fútbol Total.", "res": "Quiero un equipo que asfixie al rival, tenga la posesión y busque siempre el arco."}, {"t": "Solidez defensiva.", "res": "Lo importante es el equilibrio. Si mantenemos el arco a cero, las victorias llegarán."}, {"t": "Contragolpe letal.", "res": "Presión alta y transiciones rápidas. Quiero que seamos un rayo en el campo."}]},
-                {"q": "¿Qué mensaje le envía a la afición que duda de su proyecto?", "ans": [{"t": "Paciencia y fe.", "res": "Los grandes cambios llevan tiempo. Los resultados hablarán por sí solos en el césped."}, {"t": "Compromiso total.", "res": "Trabajaré 24 horas al día para devolver a este club al lugar que se merece."}, {"t": "Fútbol vistoso.", "res": "Vengan al estadio, se van a divertir con lo que este equipo va a proponer."}]},
-                {"q": "¿Habrá fichajes pronto?", "ans": [{"t": "Estamos mirando.", "res": "El mercado es largo. Si hay una oportunidad que mejore lo que tenemos, la aprovecharemos."}, {"t": "Confío en el grupo.", "res": "Tenemos una plantilla excelente. Mi trabajo es sacar el máximo rendimiento de ellos."}, {"t": "Buscamos perfiles.", "res": "Falta un par de piezas para que el engranaje sea perfecto. La directiva está en ello."}]}
+                {"q": f"¿Qué significa para usted dirigir a una institución como el {self.team['name']}?", "ans": [
+                    {"t": "Un honor.", "res": "Es una de las instituciones más grandes del mundo. Vengo a ganar títulos y hacer historia.", "effects": {"coach_confidence": 10, "fan_rel": 12}},
+                    {"t": "Un reto.", "res": "Sé que las expectativas son altas, pero estamos listos para el desafío táctico.", "effects": {"coach_confidence": 8, "teammate_rel": 6}},
+                    {"t": "Un sueño.", "res": "Siempre quise estar en este banquillo desde que era jugador. Hoy se hace realidad.", "effects": {"fan_rel": 15, "prestige": 10}}
+                ]},
+                {"q": "¿Qué estilo de juego piensa implementar en sus primeras semanas?", "ans": [
+                    {"t": "Fútbol Total.", "res": "Quiero un equipo que asfixie al rival, tenga la posesión y busque siempre el arco.", "effects": {"fan_rel": 12, "coach_confidence": 5}},
+                    {"t": "Solidez defensiva.", "res": "Lo importante es el equilibrio. Si mantenemos el arco a cero, las victorias llegarán.", "effects": {"coach_confidence": 10, "teammate_rel": 6, "fan_rel": -3}},
+                    {"t": "Contragolpe letal.", "res": "Presión alta y transiciones rápidas. Quiero que seamos un rayo en el campo.", "effects": {"fan_rel": 10, "teammate_rel": 8}}
+                ]},
+                {"q": "¿Qué mensaje le envía a la afición que duda de su proyecto?", "ans": [
+                    {"t": "Paciencia y fe.", "res": "Los grandes cambios llevan tiempo. Los resultados hablarán por sí solos en el césped.", "effects": {"coach_confidence": 6, "fan_rel": 4}},
+                    {"t": "Compromiso total.", "res": "Trabajaré 24 horas al día para devolver a este club al lugar que se merece.", "effects": {"fan_rel": 12, "coach_confidence": 8}},
+                    {"t": "Fútbol vistoso.", "res": "Vengan al estadio, se van a divertir con lo que este equipo va a proponer.", "effects": {"fan_rel": 15, "prestige": 8}}
+                ]},
+                {"q": "¿Habrá fichajes pronto?", "ans": [
+                    {"t": "Estamos mirando.", "res": "El mercado es largo. Si hay una oportunidad que mejore lo que tenemos, la aprovecharemos.", "effects": {"prestige": 5}},
+                    {"t": "Confío en el grupo.", "res": "Tenemos una plantilla excelente. Mi trabajo es sacar el máximo rendimiento de ellos.", "effects": {"teammate_rel": 12, "coach_confidence": 6}},
+                    {"t": "Buscamos perfiles.", "res": "Falta un par de piezas para que el engranaje sea perfecto. La directiva está en ello.", "effects": {"fan_rel": 8, "prestige": 6}}
+                ]}
             ]
         elif is_first_debut:
             pool = [
-                {"q": f"Hoy es un día histórico. Tu primer contrato profesional con el {self.team['name']}. ¿Qué sientes?", "ans": [{"t": "Es increíble.", "res": "He trabajado desde niño para este momento. Ver mi nombre en esta camiseta es un sueño."}, {"t": "Responsabilidad.", "res": "Soy joven, pero sé lo que representa este club. Vengo a aprender y a darlo todo."}, {"t": "Hambre de gloria.", "res": "Esto es solo el inicio. Quiero devolverle al club la confianza con goles y títulos."}]},
-                {"q": "¿Cuál es tu meta para esta primera temporada como profesional?", "ans": [{"t": "Aprender.", "res": "Quiero absorber todo de los veteranos y ganarme un puesto en el equipo."}, {"t": "Debutar pronto.", "res": "Mi único objetivo es pisar el césped y demostrarle al míster que puede contar conmigo."}, {"t": "Ser decisivo.", "res": "A pesar de mi edad, quiero ser una pieza clave y ayudar al equipo a ganar."}]},
-                {"q": "La afición está expectante con tu llegada. ¿Qué pueden esperar de ti?", "ans": [{"t": "Sacrificio.", "res": "No daré un balón por perdido. Sudaré la camiseta en cada entrenamiento y partido."}, {"t": "Alegría.", "res": "Quiero que la gente se divierta viéndome jugar. Vengo a disfrutar del fútbol."}, {"t": "Goles.", "res": "Como delantero, mi trabajo es mandarla a guardar, y eso es lo que haré."}]}
+                {"q": f"Hoy es un día histórico. Tu primer contrato profesional con el {self.team['name']}. ¿Qué sientes?", "ans": [
+                    {"t": "Es increíble.", "res": "He trabajado desde niño para este momento. Ver mi nombre en esta camiseta es un sueño.", "effects": {"fan_rel": 12, "prestige": 8}},
+                    {"t": "Responsabilidad.", "res": "Soy joven, pero sé lo que representa este club. Vengo a aprender y a darlo todo.", "effects": {"coach_confidence": 10, "teammate_rel": 8}},
+                    {"t": "Hambre de gloria.", "res": "Esto es solo el inicio. Quiero devolverle al club la confianza con goles y títulos.", "effects": {"prestige": 15, "fan_rel": 10, "coach_confidence": 4}}
+                ]},
+                {"q": "¿Cuál es tu meta para esta primera temporada como profesional?", "ans": [
+                    {"t": "Aprender.", "res": "Quiero absorber todo de los veteranos y ganarme un puesto en el equipo.", "effects": {"teammate_rel": 12, "coach_confidence": 10}},
+                    {"t": "Debutar pronto.", "res": "Mi único objetivo es pisar el césped y demostrarle al míster que puede contar conmigo.", "effects": {"coach_confidence": 8, "fan_rel": 6}},
+                    {"t": "Ser decisivo.", "res": "A pesar de mi edad, quiero ser una pieza clave y ayudar al equipo a ganar.", "effects": {"prestige": 12, "fan_rel": 10, "teammate_rel": -2}}
+                ]},
+                {"q": "La afición está expectante con tu llegada. ¿Qué pueden esperar de ti?", "ans": [
+                    {"t": "Sacrificio.", "res": "No daré un balón por perdido. Sudaré la camiseta en cada entrenamiento y partido.", "effects": {"coach_confidence": 10, "fan_rel": 10, "teammate_rel": 6}},
+                    {"t": "Alegría.", "res": "Quiero que la gente se divierta viéndome jugar. Vengo a disfrutar del fútbol.", "effects": {"fan_rel": 15, "prestige": 8}},
+                    {"t": "Goles.", "res": "Como delantero, mi trabajo es mandarla a guardar, y eso es lo que haré.", "effects": {"prestige": 15, "fan_rel": 10, "coach_confidence": -2}}
+                ]}
             ]
         else: # Fichaje Jugador (Cambio de club)
             pool = [
-                {"q": f"¿Cómo te sientes al vestir por fin la mítica camiseta del {self.team['name']}?", "ans": [{"t": "Cumplí un sueño.", "res": "Llevo esperando esta oportunidad desde que pateaba el balón en el barrio."}, {"t": "Paso adelante.", "res": "Es el salto de calidad que mi carrera necesitaba. Estoy en el mejor lugar posible."}, {"t": "Con hambre.", "res": "Vengo a aportar goles, sacrificio y ayudar al club a levantar trofeos pronto."}]},
-                {"q": f"Llevarás el dorsal {self.number}. ¿Eres consciente de la responsabilidad?", "ans": [{"t": "Es historia.", "res": "Sé quiénes lo usaron antes y es un orgullo portar este legado en mi espalda."}, {"t": "Solo un número.", "res": "Lo importante es lo que rinda dentro del campo, el dorsal no juega solo."}, {"t": "Motivación extra.", "res": "Me hace sentir una pieza clave del proyecto y voy a demostrar que doy la talla."}]},
-                {"q": "¿Por qué elegiste este destino entre tantas ofertas?", "ans": [{"t": "El proyecto.", "res": f"Había ofertas, pero el proyecto deportivo de este club es inigualable en {region_name}."}, {"t": "Por sentimiento.", "res": "Mi corazón siempre fue de este color. No podía decir que no a esta llamada."}, {"t": "Por el DT.", "res": "Hablé con el míster y su visión del fútbol me convenció de que este es mi sitio."}]},
-                {"q": "¿Cuándo estarás listo para debutar?", "ans": [{"t": "Mañana mismo.", "res": "He estado entrenando duro por mi cuenta. Si el míster quiere, juego mañana."}, {"t": "Poco a poco.", "res": "Necesito unos días para conocer a mis compañeros, pero estoy físicamente al 100%."}, {"t": "Ansioso.", "res": "Espero que en el próximo partido ya pueda pisar el césped y sentir a la afición."}]}
+                {"q": f"¿Cómo te sientes al vestir por fin la mítica camiseta del {self.team['name']}?", "ans": [
+                    {"t": "Cumplí un sueño.", "res": "Llevo esperando esta oportunidad desde que pateaba el balón en el barrio.", "effects": {"fan_rel": 15, "prestige": 10}},
+                    {"t": "Paso adelante.", "res": "Es el salto de calidad que mi carrera necesitaba. Estoy en el mejor lugar posible.", "effects": {"prestige": 12, "coach_confidence": 6}},
+                    {"t": "Con hambre.", "res": "Vengo a aportar goles, sacrificio y ayudar al club a levantar trofeos pronto.", "effects": {"coach_confidence": 8, "teammate_rel": 8, "fan_rel": 10}}
+                ]},
+                {"q": f"Llevarás el dorsal {self.number}. ¿Eres consciente de la responsabilidad?", "ans": [
+                    {"t": "Es historia.", "res": "Sé quiénes lo usaron antes y es un orgullo portar este legado en mi espalda.", "effects": {"fan_rel": 12, "prestige": 10}},
+                    {"t": "Solo un número.", "res": "Lo importante es lo que rinda dentro del campo, el dorsal no juega solo.", "effects": {"coach_confidence": 8, "teammate_rel": 6}},
+                    {"t": "Motivación extra.", "res": "Me hace sentir una pieza clave del proyecto y voy a demostrar que doy la talla.", "effects": {"prestige": 15, "coach_confidence": 6, "fan_rel": 8}}
+                ]},
+                {"q": "¿Por qué elegiste este destino entre tantas ofertas?", "ans": [
+                    {"t": "El proyecto.", "res": f"Había ofertas, pero el proyecto deportivo de este club es inigualable en {region_name}.", "effects": {"coach_confidence": 8, "prestige": 10}},
+                    {"t": "Por sentimiento.", "res": "Mi corazón siempre fue de este color. No podía decir que no a esta llamada.", "effects": {"fan_rel": 18, "prestige": 10}},
+                    {"t": "Por el DT.", "res": "Hablé con el míster y su visión del fútbol me convenció de que este es mi sitio.", "effects": {"coach_confidence": 15, "teammate_rel": 5}}
+                ]},
+                {"q": "¿Cuándo estarás listo para debutar?", "ans": [
+                    {"t": "Mañana mismo.", "res": "He estado entrenando duro por mi cuenta. Si el míster quiere, juego mañana.", "effects": {"coach_confidence": 10, "fan_rel": 8, "prestige": 5}},
+                    {"t": "Poco a poco.", "res": "Necesito unos días para conocer a mis compañeros, pero estoy físicamente al 100%.", "effects": {"teammate_rel": 8, "coach_confidence": 6}},
+                    {"t": "Ansioso.", "res": "Espero que en el próximo partido ya pueda pisar el césped y sentir a la afición.", "effects": {"fan_rel": 10, "prestige": 6}}
+                ]}
             ]
 
         if self.idol:
-            pool.append({"q": f"Muchos te comparan con {self.idol}. ¿Te consideras su heredero?", "ans": [{"t": "Es mi referente.", "res": f"Crecí viéndolo jugar. Es un honor la comparación, pero quiero hacer mi propio nombre."}, {"t": "Incomparable.", "res": f"Lo que hizo {self.idol} es único. Yo vengo a aportar mi propio estilo al equipo."}, {"t": "Aprendo de él.", "res": f"Trato de imitar sus movimientos, pero en el fútbol moderno hay que ser versátil."}]})
+            pool.append({"q": f"Muchos te comparan con {self.idol}. ¿Te consideras su heredero?", "ans": [
+                {"t": "Es mi referente.", "res": f"Crecí viéndolo jugar. Es un honor la comparación, pero quiero hacer mi propio nombre.", "effects": {"prestige": 12, "coach_confidence": 6, "fan_rel": 8}},
+                {"t": "Incomparable.", "res": f"Lo que hizo {self.idol} es único. Yo vengo a aportar mi propio estilo al equipo.", "effects": {"prestige": 15, "fan_rel": 10}},
+                {"t": "Aprendo de él.", "res": f"Trato de imitar sus movimientos, pero en el fútbol moderno hay que ser versátil.", "effects": {"coach_confidence": 8, "teammate_rel": 6}}
+            ]})
 
         if career_manager.career_stats.get("player_legacy") and self.is_manager:
             leg = career_manager.career_stats["player_legacy"]
-            pool.append({"q": f"Muchos lo recuerdan como un gran {leg['pos']}. ¿Veremos eso en su equipo?", "ans": [{"t": "Totalmente.", "res": "Mi equipo jugará con el mismo ADN con el que yo jugaba."}, {"t": "Es distinto.", "res": "Como técnico veo cosas que como jugador no percibía."}, {"t": "Evolución.", "res": "He aprendido mucho y quiero mezclar mi garra con orden táctico."}]})
+            pool.append({"q": f"Muchos lo recuerdan como un gran {leg['pos']}. ¿Veremos eso en su equipo?", "ans": [
+                {"t": "Totalmente.", "res": "Mi equipo jugará con el mismo ADN con el que yo jugaba.", "effects": {"fan_rel": 12, "prestige": 10}},
+                {"t": "Es distinto.", "res": "Como técnico veo cosas que como jugador no percibía.", "effects": {"coach_confidence": 8, "teammate_rel": 6}},
+                {"t": "Evolución.", "res": "He aprendido mucho y quiero mezclar mi garra con orden táctico.", "effects": {"coach_confidence": 10, "fan_rel": 8}}
+            ]})
 
         random.shuffle(pool)
         final_q = pool[:3]
-        final_q.append({"q": "Jefe de Prensa: Muchas gracias. Con esto cerramos la presentación.", "ans": [{"t": "¡Gracias!", "res": "¡Gracias a todos! ¡Nos vemos en el estadio!"}]})
+        final_q.append({"q": "Jefe de Prensa: Muchas gracias. Con esto cerramos la presentación.", "ans": [{"t": "¡Gracias!", "res": "¡Gracias a todos! ¡Nos vemos en el estadio!", "effects": {"fan_rel": 5}}]})
         return final_q
 
     def handle_events(self, events):
@@ -135,7 +218,21 @@ class PresentationScene:
                         q_data = self.questions[self.current_q]
                         if event.key == pygame.K_UP: self.selected_ans_idx = (self.selected_ans_idx - 1) % len(q_data["ans"])
                         elif event.key == pygame.K_DOWN: self.selected_ans_idx = (self.selected_ans_idx + 1) % len(q_data["ans"])
-                        elif event.key == pygame.K_RETURN: self.ans_selected = True; self.text_revealed = 0; self.timer = 0
+                        elif event.key == pygame.K_RETURN:
+                            self.ans_selected = True; self.text_revealed = 0; self.timer = 0
+                            # Apply answer effects
+                            ans_data = q_data["ans"][self.selected_ans_idx]
+                            effects = ans_data.get("effects", {})
+                            from data.career_manager import career_manager
+                            if career_manager.active:
+                                if "prestige" in effects:
+                                    career_manager._update_prestige(effects["prestige"] / 10.0)
+                                if "coach_confidence" in effects:
+                                    career_manager.career_stats["coach_confidence"] = min(100, max(0, career_manager.career_stats.get("coach_confidence", 50) + effects["coach_confidence"]))
+                                if "fan_rel" in effects:
+                                    career_manager.career_stats["fan_rel"] = min(100, max(0, career_manager.career_stats.get("fan_rel", 50) + effects["fan_rel"]))
+                                if "teammate_rel" in effects:
+                                    career_manager.career_stats["teammate_rel"] = min(100, max(0, career_manager.career_stats.get("teammate_rel", 50) + effects["teammate_rel"]))
                     else:
                         if event.key == pygame.K_RETURN:
                             if self.current_q < len(self.questions) - 1:
@@ -197,7 +294,25 @@ class PresentationScene:
             if not self.ans_selected:
                 for i, ans in enumerate(q_data["ans"]):
                     y = 350 + i * 65; rect = pygame.Rect(WIDTH//2 - 350, y, 700, 55); is_sel = (self.selected_ans_idx == i); bg_col = (45, 55, 80) if is_sel else (35, 40, 55); border_col = GOLD if is_sel else (70, 75, 90); pygame.draw.rect(surface, bg_col, rect, border_radius=8); pygame.draw.rect(surface, border_col, rect, 2 if is_sel else 1, border_radius=8)
-                    txt = self.font_subtitle.render(ans["t"], True, WHITE if is_sel else (180, 180, 200)); surface.blit(txt, (rect.centerx - txt.get_width()//2, rect.centery - txt.get_height()//2))
+                    txt = self.font_subtitle.render(ans["t"], True, WHITE if is_sel else (180, 180, 200)); surface.blit(txt, (rect.left + 25, rect.centery - txt.get_height()//2))
+                    
+                    # Render stat badges for options
+                    eff = ans.get("effects", {})
+                    badges = []
+                    if "prestige" in eff: badges.append((f"{'▲' if eff['prestige']>0 else '▼'} Prestigio {eff['prestige']:+d}", (255, 215, 0) if eff['prestige']>0 else (240, 90, 90)))
+                    if "coach_confidence" in eff: badges.append((f"{'▲' if eff['coach_confidence']>0 else '▼'} Míster {eff['coach_confidence']:+d}", (60, 220, 120) if eff['coach_confidence']>0 else (240, 90, 90)))
+                    if "fan_rel" in eff: badges.append((f"{'▲' if eff['fan_rel']>0 else '▼'} Afición {eff['fan_rel']:+d}", (60, 220, 120) if eff['fan_rel']>0 else (240, 90, 90)))
+                    if "teammate_rel" in eff: badges.append((f"{'▲' if eff['teammate_rel']>0 else '▼'} Vestuario {eff['teammate_rel']:+d}", (60, 220, 120) if eff['teammate_rel']>0 else (240, 90, 90)))
+                    
+                    b_x = rect.right - 15
+                    for b_t, b_c in reversed(badges):
+                        bs = self.font_hint.render(b_t, True, b_c)
+                        bw = bs.get_width() + 10; bh = 22
+                        b_rect = pygame.Rect(b_x - bw, rect.centery - bh//2, bw, bh)
+                        pygame.draw.rect(surface, (20, 25, 35), b_rect, border_radius=5)
+                        pygame.draw.rect(surface, b_c, b_rect, 1, border_radius=5)
+                        surface.blit(bs, (b_rect.centerx - bs.get_width()//2, b_rect.centery - bs.get_height()//2))
+                        b_x -= (bw + 6)
             else:
                 ans_data = q_data["ans"][self.selected_ans_idx]
                 ans_text = f"{self.player_name}: {ans_data['res']}"
@@ -223,8 +338,27 @@ class PresentationScene:
                 
                 for idx, line in enumerate(lines):
                     a_surf = self.font_a.render(line, True, WHITE)
-                    surface.blit(a_surf, (res_panel.left + 25, res_panel.top + 30 + idx * 35))
+                    surface.blit(a_surf, (res_panel.left + 25, res_panel.top + 25 + idx * 30))
                 
+                # Render applied effects bar at bottom of response panel
+                eff = ans_data.get("effects", {})
+                if eff and chars_to_show >= len(ans_text):
+                    badges = []
+                    if "prestige" in eff: badges.append((f"★ Prestigio {eff['prestige']:+d}", (255, 215, 0)))
+                    if "coach_confidence" in eff: badges.append((f"▲ Míster {eff['coach_confidence']:+d}", (60, 220, 120) if eff['coach_confidence']>0 else (240, 90, 90)))
+                    if "fan_rel" in eff: badges.append((f"▲ Afición {eff['fan_rel']:+d}", (60, 220, 120) if eff['fan_rel']>0 else (240, 90, 90)))
+                    if "teammate_rel" in eff: badges.append((f"▲ Vestuario {eff['teammate_rel']:+d}", (60, 220, 120) if eff['teammate_rel']>0 else (240, 90, 90)))
+                    
+                    b_x = res_panel.left + 25
+                    for b_t, b_c in badges:
+                        bs = self.font_hint.render(b_t, True, b_c)
+                        bw = bs.get_width() + 10; bh = 22
+                        b_rect = pygame.Rect(b_x, res_panel.bottom - 30, bw, bh)
+                        pygame.draw.rect(surface, (15, 20, 30), b_rect, border_radius=5)
+                        pygame.draw.rect(surface, b_c, b_rect, 1, border_radius=5)
+                        surface.blit(bs, (b_rect.centerx - bs.get_width()//2, b_rect.centery - bs.get_height()//2))
+                        b_x += bw + 8
+
                 if chars_to_show >= len(ans_text):
                     h_font = pygame.font.SysFont("Arial", 14, bold=True) if pygame.font.get_init() else pygame.font.Font(None, 14)
                     h_surf = h_font.render("PRESIONA ENTER PARA CONTINUAR", True, GOLD)

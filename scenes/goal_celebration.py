@@ -392,8 +392,26 @@ class MatchEndScene(BaseScene):
         # Chance of Press Conference
         result_str = "win" if gf > ga else ("loss" if gf < ga else "draw")
         import random
-        # 40% chance or if it's an important match (final, etc)
-        if random.random() < 0.4 or self.manager.shared_data.get("is_important_match"):
+        
+        is_important = self.manager.shared_data.get("is_important_match", False)
+        should_press = False
+
+        if career_manager.mode == "player":
+            # In player mode: ONLY when player participated in the match AND match is important
+            cp_name = career_manager.career_player["name"].lower().strip() if career_manager.career_player else ""
+            played = False
+            for ps in self.player_stats:
+                if ps.get("name") and ps["name"].lower().strip() == cp_name:
+                    played = True
+                    break
+            if played and is_important:
+                should_press = True
+        else:
+            # Manager mode: 40% chance or important match
+            if random.random() < 0.4 or is_important:
+                should_press = True
+
+        if should_press:
             from scenes.press_conference import PressConferenceScene
             self.manager.set_scene(PressConferenceScene, context={"result": result_str})
         else:

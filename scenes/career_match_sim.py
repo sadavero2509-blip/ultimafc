@@ -323,8 +323,31 @@ class CareerMatchSimScene:
             else:
                 self.manager.shared_data["last_reward"] = 0
             
-        from scenes.career_hub import CareerHubScene
-        self.manager.set_scene(CareerHubScene)
+        import random
+        is_important = self.manager.shared_data.get("is_important_match", False)
+        should_press = False
+
+        if career_manager.mode == "player":
+            cp_name = career_manager.career_player["name"].lower().strip() if career_manager.career_player else ""
+            played = any(name.lower().strip() == cp_name for name in p_stats_map)
+            if played and is_important:
+                should_press = True
+        else:
+            if random.random() < 0.4 or is_important:
+                should_press = True
+
+        if should_press:
+            pshort = career_manager.player_team["short"] if career_manager.player_team else ""
+            if self.t1_short == pshort:
+                gf, ga = self.final_g1, self.final_g2
+            else:
+                gf, ga = self.final_g2, self.final_g1
+            result_str = "win" if gf > ga else ("loss" if gf < ga else "draw")
+            from scenes.press_conference import PressConferenceScene
+            self.manager.set_scene(PressConferenceScene, context={"result": result_str})
+        else:
+            from scenes.career_hub import CareerHubScene
+            self.manager.set_scene(CareerHubScene)
 
     def update(self, dt):
         if not self.finished:

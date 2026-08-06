@@ -317,7 +317,34 @@ class PressConferenceScene(BaseScene):
                 pygame.draw.rect(surface, border_col, rect, 2 if is_sel else 1, border_radius=10)
                 
                 txt_surf = self.font_a.render(ans["t"], True, WHITE if is_sel else UI_TEXT_DIM)
-                surface.blit(txt_surf, (rect.centerx - txt_surf.get_width()//2, rect.centery - txt_surf.get_height()//2))
+                surface.blit(txt_surf, (rect.left + 25, rect.centery - txt_surf.get_height()//2))
+
+                # Render stat impact badges
+                badges = []
+                if ans.get("dt", 0) != 0:
+                    val = ans["dt"]
+                    badges.append((f"{'▲' if val>0 else '▼'} Míster {val:+d}", (60, 220, 120) if val > 0 else (255, 90, 90)))
+                if ans.get("team", 0) != 0:
+                    val = ans["team"]
+                    badges.append((f"{'▲' if val>0 else '▼'} Vestuario {val:+d}", (60, 220, 120) if val > 0 else (255, 90, 90)))
+                if ans.get("fan", 0) != 0:
+                    val = ans["fan"]
+                    badges.append((f"{'▲' if val>0 else '▼'} Afición {val:+d}", (60, 220, 120) if val > 0 else (255, 90, 90)))
+                if ans.get("board", 0) != 0:
+                    val = ans["board"]
+                    badges.append((f"{'▲' if val>0 else '▼'} Directiva {val:+d}", (60, 220, 120) if val > 0 else (255, 90, 90)))
+
+                badge_x = rect.right - 15
+                for b_txt, b_col in reversed(badges):
+                    b_surf = self.font_label.render(b_txt, True, b_col)
+                    bw = b_surf.get_width() + 10
+                    bh = 22
+                    badge_rect = pygame.Rect(badge_x - bw, rect.centery - bh//2, bw, bh)
+                    bg_b = (20, 30, 25) if b_col[0] < 100 else (35, 20, 20)
+                    pygame.draw.rect(surface, bg_b, badge_rect, border_radius=5)
+                    pygame.draw.rect(surface, b_col, badge_rect, 1, border_radius=5)
+                    surface.blit(b_surf, (badge_rect.centerx - b_surf.get_width()//2, badge_rect.centery - b_surf.get_height()//2))
+                    badge_x -= (bw + 6)
         else:
             # Finished screen
             # Cinematic goodbye from the press officer

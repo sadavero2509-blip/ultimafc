@@ -1671,7 +1671,7 @@ class UltimateHubScene:
             
             req_txt = f"• Valoración Máxima (OVR): {evo['req'].get('max_ovr', 99)}"
             if "max_speed" in evo["req"]:
-                req_txt += f"\n• Ritmo Máximo (PAC): {evo['req']['max_speed']}"
+                req_txt += f"\n• Velocidad Máxima (PAC): {evo['req']['max_speed']}"
             if "pos" in evo["req"]:
                 req_txt += f"\n• Posiciones válidas: {', '.join(evo['req']['pos'])}"
             
@@ -1724,7 +1724,7 @@ class UltimateHubScene:
                 
                 stat_y = 535
                 for sk, sv in total_stats_up.items():
-                    stat_names_es = {"speed": "Ritmo (PAC)", "shot": "Tiro (SHO)", "passing": "Pase (PAS)", "dribbling": "Regate (DRI)", "defense": "Defensa (DEF)", "physical": "Físico (PHY)"}
+                    stat_names_es = {"speed": "Velocidad (PAC)", "shot": "Tiro (SHO)", "passing": "Pase (PAS)", "dribbling": "Control (DRI)", "defense": "Defensa (DEF)", "physical": "Físico (PHY)"}
                     base_val = best_p["s"].get(sk, 70)
                     new_val = base_val + sv
                     self.draw_text(screen, f"• {stat_names_es.get(sk, sk.upper())}: {base_val} -> {new_val} (+{sv})", 890, stat_y, size=12, color=TEAL)
@@ -1799,7 +1799,7 @@ class UltimateHubScene:
                 col_x = 550
                 col_i = 0
                 for sk, sv in total_stats_up.items():
-                    stat_names_es = {"speed": "Ritmo (PAC)", "shot": "Tiro (SHO)", "passing": "Pase (PAS)", "dribbling": "Regate (DRI)", "defense": "Defensa (DEF)", "physical": "Físico (PHY)", "gk": "Portero (GK)"}
+                    stat_names_es = {"speed": "Velocidad (PAC)", "shot": "Tiro (SHO)", "passing": "Pase (PAS)", "dribbling": "Control (DRI)", "defense": "Defensa (DEF)", "physical": "Físico (PHY)", "gk": "Portero (GK)"}
                     base_val = selected_p["s"].get(sk, 70)
                     new_val = base_val + sv
                     self.draw_text(screen, f"• {stat_names_es.get(sk, sk.upper())}: {base_val} -> {new_val} (+{sv})", col_x, stat_y, size=12, color=TEAL)

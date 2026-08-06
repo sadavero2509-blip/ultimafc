@@ -364,7 +364,7 @@ class UltimateManager:
         if "last_reward_claimed" not in self.online_league_state:
             self.online_league_state["last_reward_claimed"] = True
         
-        # MIGRACIÓN: Corrección de regate para leyendas regateadoras (v2.1)
+        # MIGRACIÓN: Corrección de control para leyendas regateadoras (v2.1)
         _dribbling_fix = {
             "Maradonna": 97, "Ronaldinhu": 96, "Peléi": 96, "Ronnaldo": 93,
             "Zidanne": 93, "J. Cruyffe": 93, "Cruijff": 92, "Iniestta": 92,

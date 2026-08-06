@@ -14,7 +14,7 @@ class CareerTrainingScene:
             {"id": "speed", "name": "VELOCIDAD"},
             {"id": "shot", "name": "TIRO"},
             {"id": "passing", "name": "PASE"},
-            {"id": "dribbling", "name": "REGATE"},
+            {"id": "dribbling", "name": "CONTROL"},
             {"id": "defense", "name": "DEFENSA"},
             {"id": "physical", "name": "FÍSICO"},
         ]

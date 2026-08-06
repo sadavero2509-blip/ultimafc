@@ -367,6 +367,27 @@ class CareerManager:
             self.career_stats["relationships"] = {}
         if "children" not in self.career_stats:
             self.career_stats["children"] = []
+            
+        # Ensure permanent DT chat exists in DMs
+        dt_handle = "@dt_mister"
+        dt_name = f"DT {self.player_team['name']}" if self.player_team else "Director Técnico"
+        if not any(d.get("sender_type") == "dt" or d.get("handle") == dt_handle for d in sm["dms"]):
+            dt_dm = {
+                "id": "dt_chat_permanent",
+                "date": self.current_date.strftime("%d %b %Y") if self.current_date else "Hoy",
+                "sender": dt_name,
+                "handle": dt_handle,
+                "sender_type": "dt",
+                "message": "Bienvenido al equipo. Mantendré abierto este canal para darte indicaciones tácticas y escuchar tus peticiones.",
+                "status": "read",
+                "choices": [],
+                "reply_selected": None,
+                "thread": [
+                    {"sender": "them", "text": "Bienvenido al equipo. Mantendré abierto este canal para darte indicaciones tácticas y escuchar tus peticiones.", "date": "Hoy"}
+                ]
+            }
+            sm["dms"].insert(0, dt_dm)
+            
         self._ensure_agent_profile()
 
     def _ensure_agent_profile(self):
@@ -414,6 +435,30 @@ class CareerManager:
                 "affinity": 50,
                 "status": "Colega"
             }
+            
+        # Ensure permanent Agent chat exists in DMs
+        agent_prof = self.career_stats.get("agent_profile")
+        if agent_prof:
+            sm = self.career_stats["social_media"]
+            ag_handle = agent_prof["handle"]
+            ag_name = f"{agent_prof['name']} (Representante)"
+            if not any(d.get("sender_type") == "agent" or d.get("handle") == ag_handle for d in sm["dms"]):
+                ag_dm = {
+                    "id": "agent_chat_permanent",
+                    "date": self.current_date.strftime("%d %b %Y") if self.current_date else "Hoy",
+                    "sender": ag_name,
+                    "handle": ag_handle,
+                    "sender_type": "agent",
+                    "message": "Hola. Como tu representante, estoy disponible aquí para gestionar patrocinios, contratos o buscar ofertas de traspaso cuando lo requieras.",
+                    "status": "read",
+                    "choices": [],
+                    "reply_selected": None,
+                    "thread": [
+                        {"sender": "them", "text": "Hola. Como tu representante, estoy disponible aquí para gestionar patrocinios, contratos o buscar ofertas de traspaso cuando lo requieras.", "date": "Hoy"}
+                    ]
+                }
+                sm["dms"].insert(1 if len(sm["dms"]) > 0 else 0, ag_dm)
+
             self.update_relationship(handle, name, gender, "agent", 0)
 
     def update_relationship(self, handle, name, gender, rel_type, affinity_change):
@@ -470,13 +515,7 @@ class CareerManager:
             elif new_aff < 70:
                 new_status = "Amiga" if gender == "female" else "Amigo"
             else:
-                if gender == "female":
-                    if old_status in ("Novia", "Esposa"):
-                        new_status = old_status
-                    else:
-                        new_status = "Amiga Íntima"
-                else:
-                    new_status = "Amigo Íntimo"
+                new_status = "Amiga Íntima" if gender == "female" else "Amigo Íntimo"
         else:
             is_fem = (gender == "female")
             if new_aff <= -60:
@@ -490,10 +529,7 @@ class CareerManager:
             elif new_aff < 70:
                 new_status = "Amiga" if is_fem else "Amigo"
             else:
-                if is_fem and old_status in ("Novia", "Esposa"):
-                    new_status = old_status
-                else:
-                    new_status = "Amiga Íntima" if is_fem else "Amigo Íntimo"
+                new_status = "Amiga Íntima" if is_fem else "Amigo Íntimo"
                         
         r["status"] = new_status
         return old_status != new_status
@@ -745,169 +781,8 @@ class CareerManager:
             sm["dms"] = sm["dms"][:30]
 
     def _process_weekly_pregnancy(self):
-        """Advances pregnancy week-by-week and triggers key milestones/DMs on Mondays."""
-        if self.mode != "player" or not self.career_player:
-            return
-            
-        self._ensure_social_media_exists()
-        sm = self.career_stats["social_media"]
-        relationships = self.career_stats.get("relationships", {})
-        
-        for h, rel in list(relationships.items()):
-            # Solo aplica a la esposa
-            if rel.get("status") != "Esposa":
-                continue
-                
-            # 1. Si está embarazada
-            if rel.get("is_pregnant"):
-                # Incrementar semanas
-                rel["pregnancy_weeks"] = rel.get("pregnancy_weeks", 0) + 1
-                weeks = rel["pregnancy_weeks"]
-                
-                # Hit 1: Semana 12 (Ecografía y Anuncio)
-                if weeks == 12:
-                    msg = f"¡Hola mi amor! Hoy me hicieron la ecografía de las 12 semanas y ¡mira! Ya se le ve forma al bebé. 🥹 Es el momento más hermoso de mi vida. ¿Qué opinas si publicamos la noticia para compartirla con nuestros seguidores o preferimos mantenerlo en privado por ahora? 📸❤️"
-                    choices = [
-                        {"text": "¡Publiquémoslo ya! Quiero que todo el mundo comparta nuestra alegría. 📸👶", "effects": {"prestige": 15, "fan_rel": 10, "affinity_change": 10, "news_trigger": "embarazo_anunciado"}, "next_dm": {
-                            "message": "¡Sii! Subí la foto de la ecografía y las redes están estallando de felicitaciones. ¡Te amo papá! 😍✨",
-                            "choices": []
-                        }},
-                        {"text": "Prefiero que lo mantengamos en la intimidad familiar por un tiempo, mi amor. Es más seguro.", "effects": {"affinity_change": 5, "coach_confidence": 3}, "next_dm": {
-                            "message": "Tienes mucha razón, cariño. Es un momento sagrado para nosotros dos. Gracias por ser tan protector. ❤️",
-                            "choices": []
-                        }}
-                    ]
-                    self._add_dm(rel["name"], h, "female_player", msg, choices)
-                    dm_added = sm["dms"][0]
-                    dm_added["relationship_handle"] = h
-                    dm_added["gender"] = "female"
-                    
-                # Hit 2: Semana 20 (Revelación de Sexo y Nombre)
-                elif weeks == 20:
-                    gender = random.choice(["male", "female"])
-                    if gender == "male":
-                        boy_names = ["Mateo", "Lucas", "Santiago", "Thiago", "Matías", "Benjamín", "Joaquín", "Felipe", "Bautista", "Valentín"]
-                        baby_name = random.choice(boy_names)
-                    else:
-                        girl_names = ["Emma", "Sofía", "Martina", "Valentina", "Isabella", "Catalina", "Camila", "Lucía", "Victoria", "Julieta"]
-                        baby_name = random.choice(girl_names)
-                    
-                    rel["baby_gender"] = gender
-                    rel["baby_name"] = f"{baby_name} {self.career_player['name'].strip().split()[-1]}"
-                    
-                    msg = f"¡Amor! Hoy en la ecografía de las 20 semanas por fin se dejó ver el bebé. ¡Vamos a tener un{'a niña' if gender == 'female' else ' niño'}! 👶💖 He pensado que podríamos llamarl{'a' if gender == 'female' else 'o'} {baby_name}. ¿Qué te parece el nombre o prefieres elegir tú?"
-                    choices = [
-                        {"text": f"¡Me encanta el nombre {baby_name}! Es perfecto para nuestr{'a' if gender == 'female' else 'o'} hij{'a' if gender == 'female' else 'o'}. ❤️", "effects": {"affinity_change": 12}, "next_dm": {
-                            "message": f"¡Ay qué emoción! Ya es oficial entonces: se llamará {rel['baby_name']}. ¡Te amo muchísimo, papá! 💕",
-                            "choices": []
-                        }},
-                        {"text": "Es un nombre hermoso, pero ¿qué tal si lo decidimos con calma en casa?", "effects": {"affinity_change": 5}, "next_dm": {
-                            "message": "Claro, mi vida. Lo charlamos tranquilos en la cena y buscamos opciones que nos gusten a ambos. 😘",
-                            "choices": []
-                        }}
-                    ]
-                    self._add_dm(rel["name"], h, "female_player", msg, choices)
-                    dm_added = sm["dms"][0]
-                    dm_added["relationship_handle"] = h
-                    dm_added["gender"] = "female"
-                    
-                # Hit 3: Semana 24 (Baja de Maternidad)
-                elif weeks == 24:
-                    if rel.get("type") in ("player", "female_player"):
-                        rel["on_maternity_leave"] = True
-                        msg = f"Hola cariño. Ya en la semana 24 el médico del club me ha recomendado dejar los entrenamientos de alta intensidad y tomar la baja por maternidad. 🤰⚽ Me da nostalgia alejarme de las canchas por unos meses, pero es lo mejor para el bebé. ¡A partir de ahora veré todos tus partidos desde la grada!"
-                        choices = [
-                            {"text": "Haces bien, mi amor. Tu salud y la del bebé son lo primero. Estaré en la tribuna contigo.", "effects": {"affinity_change": 10}},
-                            {"text": "Te extrañaremos en el césped, pero es por una hermosa causa. ¡Te amo!", "effects": {"affinity_change": 6}}
-                        ]
-                        self._add_dm(rel["name"], h, "female_player", msg, choices)
-                        dm_added = sm["dms"][0]
-                        dm_added["relationship_handle"] = h
-                        dm_added["gender"] = "female"
-                        
-                # Hit 4: Semana 32 (Hospital y Presupuesto)
-                elif weeks == 32:
-                    msg = f"¡Hola mi vida! Ya en la semana 32 hay que reservar la clínica de maternidad y comprar los últimos muebles del cuarto del bebé. Me pasaron dos presupuestos: la clínica privada premium ($0.03M) o el hospital de la mutualidad ($0.005M). ¿Cuál elegimos? 🏥🍼"
-                    choices = [
-                        {"text": "Elijamos la clínica premium. Quiero lo mejor y más seguro para ti y el bebé. (-$0.03M)", "effects": {"money": -0.03, "affinity_change": 15}, "next_dm": {
-                            "message": "¡Oh, eres tan lindo! De verdad me da mucha tranquilidad saber que contaremos con la mejor atención. Ya hice la reserva. ¡Te amo! ❤️🏥",
-                            "choices": []
-                        }},
-                        {"text": "El hospital de la mutualidad tiene excelentes profesionales y es más que suficiente. (-$0.005M)", "effects": {"money": -0.005, "affinity_change": 3}, "next_dm": {
-                            "message": "Entiendo, es una opción muy razonable y práctica. Haré el trámite de admisión esta tarde. ¡Mucho éxito en el entrenamiento! 👍",
-                            "choices": []
-                        }}
-                    ]
-                    self._add_dm(rel["name"], h, "female_player", msg, choices)
-                    dm_added = sm["dms"][0]
-                    dm_added["relationship_handle"] = h
-                    dm_added["gender"] = "female"
-                    
-                # Hit 5: Semana 38 (Nacimiento del bebé)
-                elif weeks >= 38:
-                    baby_name = rel.get("baby_name")
-                    gender = rel.get("baby_gender", "male")
-                    if not baby_name:
-                        surn = self.career_player["name"].strip().split()[-1]
-                        baby_name = f"Mateo {surn}" if gender == "male" else f"Emma {surn}"
-                        
-                    # Registrar el hijo
-                    child = {
-                        "name": baby_name,
-                        "gender": gender,
-                        "birth_date": self.current_date.isoformat(),
-                        "mother_handle": h,
-                        "mother_name": rel["name"],
-                        "age": 0
-                    }
-                    if "children" not in self.career_stats:
-                        self.career_stats["children"] = []
-                    self.career_stats["children"].append(child)
-                    
-                    # Limpiar variables de embarazo
-                    rel["is_pregnant"] = False
-                    rel["pregnancy_weeks"] = 0
-                    if "baby_name" in rel: del rel["baby_name"]
-                    if "baby_gender" in rel: del rel["baby_gender"]
-                    
-                    # Licencia de maternidad post-parto
-                    rel["on_maternity_leave"] = True
-                    if rel.get("type") in ("player", "female_player"):
-                        rel["maternity_weeks_left"] = 12
-                    else:
-                        rel["maternity_weeks_left"] = 8
-                        
-                    # Noticia de nacimiento
-                    self.add_news("local", "👶 ¡BIENVENIDO AL MUNDO!", f"¡Ha nacido el bebé de @{self.career_player['name'].lower().replace(' ', '')} y {rel['name']}! Se llama {baby_name}. ¡Toda la familia del club les desea lo mejor!")
-                    
-                    self.add_email("info", "¡Felicidades por tu bebé!", f"Hola {self.career_player['name']}, de parte de toda la plantilla y la directiva te enviamos nuestras más sinceras felicitaciones por el nacimiento de {baby_name}. ¡Disfruta esta hermosa etapa!")
-                    
-                    msg = f"¡Cariño! Ya nació nuestro precioso bebé, ¡es perfecto/a! 😭❤️ {baby_name} ya está aquí con nosotros y no puedo dejar de mirarl{'o' if gender == 'male' else 'a'}. Gracias por estar a mi lado. ¡Somos una familia completa! 👨‍👩‍👧‍👦✨"
-                    choices = [
-                        {"text": "¡Es el día más feliz de mi vida! Los amo con toda mi alma. 👨‍👩‍👧‍👦❤️", "effects": {"affinity_change": 25, "prestige": 15}}
-                    ]
-                    self._add_dm(rel["name"], h, "female_player", msg, choices)
-                    dm_added = sm["dms"][0]
-                    dm_added["relationship_handle"] = h
-                    dm_added["gender"] = "female"
-            
-            # 2. Si está de baja de maternidad posparto
-            elif rel.get("on_maternity_leave") and rel.get("maternity_weeks_left", 0) > 0:
-                rel["maternity_weeks_left"] -= 1
-                if rel["maternity_weeks_left"] == 0:
-                    rel["on_maternity_leave"] = False
-                    
-                    if rel.get("type") in ("player", "female_player"):
-                        msg = f"¡Hola mi amor! Hoy se cumple mi última semana de baja por maternidad y me reincorporo a los entrenamientos completos con mi equipo. 🏃‍♀️⚽ Ha sido un tiempo maravilloso cuidando al bebé, pero ¡ya extrañaba el césped! A ver si vienes a ver mi próximo partido."
-                    else:
-                        msg = f"¡Hola cariño! Hoy por fin termino mi reposo posparto y me siento al 100% de energía de nuevo. El bebé está durmiendo genial y ya puedo retomar mis actividades normales. ¡Gracias por apoyarme tanto estos meses! ❤️"
-                    choices = [
-                        {"text": "¡Qué gran noticia mi vida! Sé lo mucho que extrañabas tu rutina. ¡A por todas! 😘", "effects": {"affinity_change": 10}}
-                    ]
-                    self._add_dm(rel["name"], h, "female_player", msg, choices)
-                    dm_added = sm["dms"][0]
-                    dm_added["relationship_handle"] = h
-                    dm_added["gender"] = "female"
+        """No-op: Maternity and pregnancy mechanics disabled."""
+        return
 
     def _cm_auto_post(self, stats_user, match_result):
         sm = self.career_stats["social_media"]
@@ -1139,19 +1014,6 @@ class CareerManager:
                         }}
                     ]
                 }},
-                {"text": f"Sí, soy su hijo, y espero estar a la altura. Por cierto, yo también sigo tus publicaciones, eres preciosa. ¿Me invitas a un café para contarte más? 😉☕", "effects": {"prestige": 22, "coach_confidence": -4, "fan_rel": 4, "affinity_change": 25}, "tone": "romantic", "next_dm": {
-                    "message": "Jajaja, ¡qué directo! 😉 Me halaga tu interés... Pero dime, ¿siempre eres así de atrevido en todo o solo con las cámaras de por medio?",
-                    "choices": [
-                        {"text": "Solo cuando sé muy bien lo que quiero. Y ahora mismo quiero conocerte. 😉", "effects": {"affinity_change": 15, "prestige": 5}, "next_dm": {
-                            "message": "Vaya... Me has dejado sin palabras. Está bien, acepto ese café. Escríbeme cuando tengas un día libre.",
-                            "choices": []
-                        }},
-                        {"text": "Jaja, un poco de ambos. Pero de verdad me gustaría charlar tranquilos.", "effects": {"affinity_change": 8}, "next_dm": {
-                            "message": "Bueno, está bien. Vamos a ver si el café está a la altura de tu confianza.",
-                            "choices": []
-                        }}
-                    ]
-                }},
                 {"text": "Sí, soy su hijo, pero escribiré mi propia historia por mí mismo.", "effects": {"prestige": 25, "coach_confidence": -3, "fan_rel": 5, "affinity_change": -5}, "tone": "professional", "next_dm": {
                     "message": "¡Esa es la mentalidad de un campeón! Tienes toda la razón, harás tu propio nombre. ¡Mucho éxito!",
                     "choices": []
@@ -1171,50 +1033,19 @@ class CareerManager:
         unread_handles = {d["handle"] for d in sm["dms"] if d["status"] in ("unread", "read")}
         recent_handles = [d["handle"] for d in sm["dms"][:3]]
 
-        # Pre-calculate context for weighted category selection
-        partner_handle = None
-        partner_name = None
-        partner_status = None
-        partner_rel = None
-        for h, rel in self.career_stats.get("relationships", {}).items():
-            if rel.get("status") in ("Novia", "Esposa"):
-                partner_handle = h
-                partner_name = rel["name"]
-                partner_status = rel["status"]
-                partner_rel = rel
-                break
-
         agent_prof = self.career_stats.get("agent_profile")
         roster = self.rosters.get(self.player_team["short"], []) if self.player_team else []
         teammates = [p for p in roster if not p.get("is_user_player")]
 
-        # Determine if partner is long distance
-        is_long_distance = False
-        if partner_rel and self.player_team:
-            partner_team_short = partner_rel.get("team_short")
-            partner_league = partner_rel.get("league")
-            
-            if not partner_league:
-                partner_rel["league"] = self.player_team.get("league", "ES")
-                partner_league = partner_rel["league"]
-            if not partner_team_short:
-                partner_rel["team_short"] = self.player_team.get("short")
-                partner_team_short = partner_rel["team_short"]
-                
-            if partner_league != self.player_team.get("league", "ES"):
-                is_long_distance = True
-
-        # Weighted category selection for more balanced DM distribution
+        # Weighted category selection for balanced DM distribution (female DMs reduced)
         categories = []
-        if partner_handle and partner_handle not in unread_handles and partner_handle not in recent_handles:
-            categories.append(("partner", 25))
         if agent_prof and agent_prof["handle"] not in unread_handles and agent_prof["handle"] not in recent_handles:
-            categories.append(("agent", 15))
+            categories.append(("agent", 19))
         if teammates:
-            categories.append(("teammate", 15))
-        categories.append(("brand", 15))
-        categories.append(("female_celeb", 22))
-        categories.append(("fan", 8))
+            categories.append(("teammate", 30))
+        categories.append(("brand", 30))
+        categories.append(("female_celeb", 6))
+        categories.append(("fan", 15))
         
         if not categories:
             categories = [("brand", 50), ("fan", 50)]
@@ -1698,7 +1529,10 @@ class CareerManager:
             "message": message,
             "status": "unread" if auto_replied_idx is None else "replied",
             "choices": choices,
-            "reply_selected": auto_replied_idx
+            "reply_selected": auto_replied_idx,
+            "thread": [
+                {"sender": "them", "text": message, "date": date_str}
+            ]
         }
         sm["dms"].insert(0, dm)
 
@@ -1724,6 +1558,24 @@ class CareerManager:
         if "teammate_rel" in effects:
             self.career_stats["teammate_rel"] = min(100, max(0, self.career_stats.get("teammate_rel", 50) + effects["teammate_rel"]))
             
+        if "accept_captain" in effects:
+            c_type = effects["accept_captain"]
+            if c_type == "club":
+                self.career_stats["is_captain"] = True
+                self.career_stats["captain_offer_pending"] = False
+                self.career_stats["pending_captain_news"] = "club"
+            elif c_type == "nt":
+                self.career_stats["is_nt_captain"] = True
+                self.career_stats["nt_captain_offer_pending"] = False
+                self.career_stats["pending_captain_news"] = "nt"
+
+        if "reject_captain" in effects:
+            c_type = effects["reject_captain"]
+            if c_type == "club":
+                self.career_stats["captain_offer_pending"] = False
+            elif c_type == "nt":
+                self.career_stats["nt_captain_offer_pending"] = False
+            
         # Process relationship effects
         rel_handle = dm.get("relationship_handle")
         if rel_handle:
@@ -1734,35 +1586,24 @@ class CareerManager:
             affinity_change = effects.get("affinity_change", 0)
             self.update_relationship(rel_handle, rel_name, gender, rel_type, affinity_change)
             
-            # Explicit status if specified
-            set_status = effects.get("set_relationship_status")
-            if set_status:
-                if rel_handle in self.career_stats["relationships"]:
-                    self.career_stats["relationships"][rel_handle]["status"] = set_status
-                    # Save team details for long distance checks
-                    if set_status in ("Novia", "Esposa") and self.player_team:
-                        self.career_stats["relationships"][rel_handle]["league"] = self.player_team.get("league", "ES")
-                        self.career_stats["relationships"][rel_handle]["team_short"] = self.player_team.get("short")
-            
-            if effects.get("set_pregnancy"):
-                if rel_handle in self.career_stats["relationships"]:
-                    self.career_stats["relationships"][rel_handle]["is_pregnant"] = True
-                    self.career_stats["relationships"][rel_handle]["pregnancy_weeks"] = 0
-            
             # Check news triggers
             news_trigger = effects.get("news_trigger")
-            if news_trigger == "novia_confirmado":
-                self.add_news("local", "💥 Romance Confirmado", f"La prensa rosa vincula a la estrella @{self.career_player['name'].lower().replace(' ', '')} con {rel_name} en una intensa relación de noviazgo.")
-            elif news_trigger == "boda_real":
-                self.add_news("local", "💍 ¡BODA DEL AÑO!", f"¡Se casaron! @{self.career_player['name'].lower().replace(' ', '')} y {rel_name} contraen matrimonio en una gran ceremonia privada.")
-            elif news_trigger == "embarazo_anunciado":
-                self.add_news("local", "🤰 ESTRELLA EN CAMINO", f"El jugador @{self.career_player['name'].lower().replace(' ', '')} y su esposa {rel_name} han anunciado en redes que esperan su primer hijo. ¡Felicidades a la pareja!")
-            elif news_trigger == "enemistad_teammate":
+            if news_trigger == "enemistad_teammate":
                 self.add_news("local", "🔥 CRISIS EN EL VESTUARIO", f"Rumores de vestuario reportan que la relación entre @{self.career_player['name'].lower().replace(' ', '')} y su compañero {rel_name} está rota por completo.")
+
+        # Update chat thread
+        date_now = self.current_date.strftime("%d %b %Y") if self.current_date else "Hoy"
+        if "thread" not in dm:
+            dm["thread"] = [{"sender": "them", "text": dm.get("message", ""), "date": dm.get("date", "")}]
+
+        choice_text = choice.get("text", "") if isinstance(choice, dict) else str(choice)
+        if choice_text:
+            dm["thread"].append({"sender": "me", "text": choice_text, "date": date_now})
 
         # Multi-turn conversational flow check
         next_dm = choice.get("next_dm")
         if next_dm and next_dm.get("message"):
+            dm["thread"].append({"sender": "them", "text": next_dm["message"], "date": date_now})
             dm["message"] = next_dm["message"]
             dm["choices"] = next_dm.get("choices", [])
             dm["status"] = "unread"
@@ -1774,10 +1615,189 @@ class CareerManager:
             
         return True
 
+    def send_dt_request(self, request_type):
+        self._ensure_social_media_exists()
+        sm = self.career_stats["social_media"]
+        dt_dm = next((d for d in sm["dms"] if d.get("sender_type") == "dt" or d.get("handle") == "@dt_mister"), None)
+        if not dt_dm:
+            return False
+            
+        date_now = self.current_date.strftime("%d %b %Y") if self.current_date else "Hoy"
+        if "thread" not in dt_dm:
+            dt_dm["thread"] = [{"sender": "them", "text": dt_dm.get("message", ""), "date": date_now}]
+            
+        coach_conf = self.career_stats.get("coach_confidence", 50)
+        energy = self.career_player.get("energy", 100) if self.career_player else 100
+        avg_rating = self.career_stats.get("avg_rating", 7.0)
+        
+        player_msg = ""
+        dt_reply = ""
+        choices = []
+        
+        if request_type == "starter":
+            player_msg = "Mánager, me siento en óptimas condiciones y preparado para ser titular y aportar al equipo en el próximo encuentro."
+            if coach_conf >= 45 or avg_rating >= 7.0:
+                dt_reply = "Coincido contigo. Has mostrado un gran nivel y disciplina. Serás titular en el próximo partido. Confío en ti."
+                choices = [
+                    {"text": "¡Muchas gracias Mánager! Le garantizo que lo daré todo en la cancha para respaldar su decisión.", "effects": {"coach_confidence": 5}},
+                    {"text": "Excelente decisión Mánager. Demostraré por qué debo estar en el once inicial.", "effects": {"coach_confidence": 3}}
+                ]
+            else:
+                dt_reply = f"Por el momento tu confianza/rendimiento ({coach_conf}/100) no justifica darte la titularidad. Debes esforzarte más en los entrenamientos."
+                choices = [
+                    {"text": "Entiendo Mánager. Seguiré trabajando duro para ganarme el puesto.", "effects": {"coach_confidence": 3}},
+                    {"text": "Respeto su decisión, aunque considero que merezco la oportunidad.", "effects": {"coach_confidence": -2}}
+                ]
+        elif request_type == "rest":
+            player_msg = "Mánager, arrastro fatiga muscular tras los últimos compromisos y agradecería un descanso en el próximo partido."
+            if energy < 85 or coach_conf >= 50:
+                dt_reply = "Entendido. Es importante cuidar tu estado físico para la temporada. Descansarás en la próxima jornada."
+                if self.career_player: self.career_player["energy"] = min(100, energy + 25)
+                choices = [
+                    {"text": "¡Muchas gracias Mánager! Aprovecharé para recuperarme al 100% y volver con todo.", "effects": {"coach_confidence": 2}},
+                    {"text": "Gracias por la comprensión, estaré listo para el siguiente compromiso.", "effects": {}}
+                ]
+            else:
+                dt_reply = "El equipo afronta un duelo decisivo y te necesitamos al 100%. No podemos permitirnos rotaciones en este momento."
+                choices = [
+                    {"text": "Comprendido Mánager, dejaré todo en el campo a pesar del cansancio.", "effects": {"coach_confidence": 4}},
+                    {"text": "Entendido Mánager, espero responder a la exigencia.", "effects": {}}
+                ]
+        elif request_type == "position":
+            player_msg = "Mánager, considero que mi rendimiento colectivo e individual sería superior si juego en mi posición natural."
+            if coach_conf >= 50:
+                dt_reply = "Acepto tu sugerencia táctica. He ajustado el esquema para que juegues en tu puesto preferido."
+                choices = [
+                    {"text": "¡Muchas gracias Mánager! Rendiré al máximo en mi posición habitual.", "effects": {"coach_confidence": 3}},
+                    {"text": "Gracias por escucharme Mánager, se notará en el campo.", "effects": {"coach_confidence": 2}}
+                ]
+            else:
+                dt_reply = "Las necesidades del esquema colectivo están por encima de las preferencias individuales en este momento."
+                choices = [
+                    {"text": "Entendido Mánager, jugaré donde el equipo me necesite sin poner peros.", "effects": {"coach_confidence": 4}},
+                    {"text": "No comparto la decisión táctica, pero acataré las instrucciones.", "effects": {"coach_confidence": -3}}
+                ]
+        elif request_type == "transfer":
+            player_msg = "Mánager, me gustaría solicitar formalmente que me pongan en la lista de transferibles para buscar nuevos horizontes."
+            success = self.request_transfer_status("transfer")
+            if success:
+                dt_reply = "Si esa es tu decisión, la directiva ha sido notificada para escuchar ofertas en el mercado."
+                choices = [
+                    {"text": "Gracias por facilitar el proceso Mánager, mantendré el profesionalismo hasta el final.", "effects": {"prestige": 2}},
+                    {"text": "Agradezco la gestión, esperemos que llegue una buena propuesta.", "effects": {}}
+                ]
+            else:
+                dt_reply = "Eres una pieza fundamental en el proyecto del club y la directiva no considera tu salida en este momento."
+                choices = [
+                    {"text": "Agradezco que valore mi importancia en el club, seguiré enfocado aquí.", "effects": {"coach_confidence": 5}},
+                    {"text": "Me siento frustrado por la negativa, pero respetaré mi contrato.", "effects": {"coach_confidence": -4}}
+                ]
+                
+        dt_dm["thread"].append({"sender": "me", "text": player_msg, "date": date_now})
+        dt_dm["thread"].append({"sender": "them", "text": dt_reply, "date": date_now})
+        dt_dm["message"] = dt_reply
+        dt_dm["choices"] = choices
+        dt_dm["status"] = "unread"
+        dt_dm["reply_selected"] = None
+        return True
+
+    def send_agent_request(self, request_type):
+        self._ensure_social_media_exists()
+        sm = self.career_stats["social_media"]
+        agent_prof = self.career_stats.get("agent_profile")
+        if not agent_prof:
+            return False
+            
+        ag_handle = agent_prof["handle"]
+        ag_dm = next((d for d in sm["dms"] if d.get("sender_type") == "agent" or d.get("handle") == ag_handle), None)
+        if not ag_dm:
+            return False
+            
+        date_now = self.current_date.strftime("%d %b %Y") if self.current_date else "Hoy"
+        if "thread" not in ag_dm:
+            ag_dm["thread"] = [{"sender": "them", "text": ag_dm.get("message", ""), "date": date_now}]
+            
+        agent_level = self.agent.get("level", 1) if self.agent else 1
+        prestige = self.career_stats.get("prestige", 100)
+        affinity = agent_prof.get("affinity", 50)
+        
+        player_msg = ""
+        ag_reply = ""
+        choices = []
+        
+        if request_type == "sponsors":
+            player_msg = "Agente, necesitamos buscar mejores acuerdos comerciales de patrocinio para subir nuestra marca personal."
+            if agent_level >= 1 and (prestige >= 100 or random.random() < 0.65):
+                bonus_m = round(0.04 + agent_level * 0.01, 3)
+                bonus_p = 10 + agent_level * 5
+                ag_reply = f"¡Excelentes noticias! He cerrado una alianza comercial express por ${bonus_m:.3f}M y +{bonus_p} de prestigio."
+                choices = [
+                    {"text": f"¡Extraordinario trabajo! Gracias por gestionar mi marca personal tan eficientemente. (+${bonus_m:.3f}M)", "effects": {"money": bonus_m, "prestige": bonus_p, "affinity_change": 6}},
+                    {"text": "Bien hecho, sigamos buscando más alianzas de alto nivel.", "effects": {"money": bonus_m, "prestige": bonus_p, "affinity_change": 3}}
+                ]
+            else:
+                ag_reply = "He sondeado varias marcas, pero actualmente piden un mayor prestigio internacional antes de firmar nuevos patrocinios."
+                choices = [
+                    {"text": "Entendido, trabajaré en subir mi rendimiento y fama para el próximo trimestre.", "effects": {"affinity_change": 3}},
+                    {"text": "Deberías presionar más a las agencias, para eso te pago tu comisión.", "effects": {"affinity_change": -5}}
+                ]
+        elif request_type == "renew":
+            player_msg = "Agente, considero que mi nivel en el campo justifica una negociación para mejorar mi contrato salarial."
+            ovr = self.career_player.get("ovr", 70) if self.career_player else 70
+            if ovr >= 72 or affinity >= 60:
+                salary_boost = round(0.005 + agent_level * 0.003, 4)
+                ag_reply = f"¡Conseguido! Hablé con la directiva del club y acordamos un incremento salarial."
+                choices = [
+                    {"text": "¡Espléndido! Eres el mejor representante que podría tener. ¡Muchas gracias!", "effects": {"money": salary_boost, "affinity_change": 8}},
+                    {"text": "Buena gestión. Asegúrate de monitorear todos los bonus por rendimiento.", "effects": {"money": salary_boost, "affinity_change": 3}}
+                ]
+            else:
+                ag_reply = "La directiva del club se niega a reabrir las negociaciones salariales en este momento de la temporada."
+                choices = [
+                    {"text": "Entiendo la posición del club, esperaremos al momento oportuno.", "effects": {"affinity_change": 3}},
+                    {"text": "Me parece inaceptable. Si no valoran mi nivel, empezaremos a escuchar ofertas externas.", "effects": {"affinity_change": -4}}
+                ]
+        elif request_type == "transfer_market":
+            player_msg = "Agente, quiero que busques activamente ofertas de otros clubes interesados en mi fichaje."
+            if self.transfer_window_open or agent_level >= 2:
+                ag_reply = "He enviado tu perfil a varios ojeadores internacionales y hay interés de dos clubes para ofertar cuando abra el mercado."
+                choices = [
+                    {"text": "¡Gran trabajo! Mantén los contactos abiertos para evaluar las propuestas.", "effects": {"prestige": 5, "affinity_change": 5}},
+                    {"text": "Perfecto, busquemos la mejor propuesta tanto deportiva como económica.", "effects": {"prestige": 3}}
+                ]
+            else:
+                ag_reply = "La ventana de traspasos está cerrada y los clubes están esperando el final de la temporada."
+                choices = [
+                    {"text": "Está bien, mantendremos el foco completo en el equipo actual por ahora.", "effects": {"affinity_change": 2}},
+                    {"text": "Procura mantener informados a los representantes de otros clubes de todas formas.", "effects": {"affinity_change": -3}}
+                ]
+        elif request_type == "pr_boost":
+            player_msg = "Agente, me gustaría organizar una campaña de imagen pública para mejorar la relación con la afición y los medios."
+            if self.career_stats.get("money", 0) >= 0.01:
+                ag_reply = "¡Hecho! Organizamos una sesión de firmas y entrevistas exclusivas con medios deportivos. (+12 Relación Hinchas, +10 Prestigio)."
+                choices = [
+                    {"text": "¡Excelente evento! Gracias por potenciar mi imagen pública. (-$0.01M)", "effects": {"fan_rel": 12, "prestige": 10, "money": -0.01, "affinity_change": 5}},
+                    {"text": "Buen resultado, se notará el impacto en las gradas.", "effects": {"fan_rel": 10, "prestige": 8, "money": -0.01}}
+                ]
+            else:
+                ag_reply = "No disponemos de fondos suficientes para financiar una campaña de relaciones públicas en este momento."
+                choices = [
+                    {"text": "Comprendido, esperaremos a juntar algo más de capital.", "effects": {"affinity_change": 1}},
+                    {"text": "Deberíamos cuidar más nuestra presencia mediática.", "effects": {"affinity_change": -3}}
+                ]
+                
+        ag_dm["thread"].append({"sender": "me", "text": player_msg, "date": date_now})
+        ag_dm["thread"].append({"sender": "them", "text": ag_reply, "date": date_now})
+        ag_dm["message"] = ag_reply
+        ag_dm["choices"] = choices
+        ag_dm["status"] = "unread"
+        ag_dm["reply_selected"] = None
+        return True
+
     def post_custom_message(self, tone):
         self._ensure_social_media_exists()
         sm = self.career_stats["social_media"]
-        p_name = self.career_player["name"] if self.career_player else "Jugador"
+        p_name = self.career_player["name"] if (self.mode == "player" and self.career_player) else self.manager_name
         
         content = ""
         if tone == "professional":
@@ -1789,6 +1809,16 @@ class CareerManager:
             self._update_prestige(1.0)
             self.career_stats["coach_confidence"] = max(0, self.career_stats.get("coach_confidence", 50) - 4)
             self.career_stats["fan_rel"] = min(100, self.career_stats.get("fan_rel", 50) + 4)
+        elif tone == "achievement":
+            content = f"¡Orgulloso de haber alcanzado un nuevo objetivo en mi carrera profesional! 🏆 Agradecido con el equipo y la afición. ¡Vamos por más! 💪⚽ #MetasCumplidas"
+            self._update_prestige(1.5)
+            self.career_stats["fan_rel"] = min(100, self.career_stats.get("fan_rel", 50) + 5)
+            self.career_stats["coach_confidence"] = min(100, self.career_stats.get("coach_confidence", 50) + 3)
+        elif tone == "victory":
+            content = f"¡Gran sensación tras los últimos resultados! El trabajo en equipo da sus frutos. ¡A mantener el nivel! 🔥⚽ #UniónYEsfuerzo"
+            self._update_prestige(0.8)
+            self.career_stats["fan_rel"] = min(100, self.career_stats.get("fan_rel", 50) + 4)
+            self.career_stats["teammate_rel"] = min(100, self.career_stats.get("teammate_rel", 50) + 3)
             
         if content:
             date_str = self.current_date.strftime("%d %b %Y") if self.current_date else "Hoy"
@@ -1801,11 +1831,74 @@ class CareerManager:
                 "likes": int(sm["followers"] * random.uniform(0.08, 0.20)) + 5,
                 "retweets": int(sm["followers"] * random.uniform(0.01, 0.04)) + 1,
                 "type": "user",
-                "user_replied": True
+                "user_replied": True,
+                "comments": []
             }
             sm["posts"].insert(0, post)
             return True
         return False
+
+    def reply_to_post(self, post_id, tone):
+        self._ensure_social_media_exists()
+        sm = self.career_stats["social_media"]
+        post = next((p for p in sm["posts"] if p.get("id") == post_id), None)
+        if not post:
+            return False
+            
+        p_name = self.career_player["name"] if (self.mode == "player" and self.career_player) else self.manager_name
+        p_handle = sm.get("player_handle") or f"@{p_name.lower().replace(' ', '')}"
+        date_str = self.current_date.strftime("%d %b %Y") if self.current_date else "Hoy"
+        
+        reply_content = ""
+        if tone == "positive":
+            reply_content = "¡Totalmente de acuerdo! Seguiremos trabajando duro para dar la mejor versión en la cancha. 👊⚽"
+            self._update_prestige(0.4)
+            self.career_stats["fan_rel"] = min(100, self.career_stats.get("fan_rel", 50) + 3)
+        elif tone == "grateful":
+            reply_content = "Muchas gracias por el apoyo constante. ¡Este grupo nunca se rinde! ❤️🙏"
+            self._update_prestige(0.3)
+            self.career_stats["fan_rel"] = min(100, self.career_stats.get("fan_rel", 50) + 4)
+            self.career_stats["teammate_rel"] = min(100, self.career_stats.get("teammate_rel", 50) + 2)
+        elif tone == "spicy":
+            reply_content = "Que sigan hablando los críticos, los resultados verdaderos se ven dentro del campo. 😉🔥"
+            self._update_prestige(1.0)
+            self.career_stats["coach_confidence"] = max(0, self.career_stats.get("coach_confidence", 50) - 2)
+            self.career_stats["fan_rel"] = min(100, self.career_stats.get("fan_rel", 50) + 5)
+            
+        if "comments" not in post:
+            post["comments"] = []
+            
+        post["comments"].append({
+            "author": p_name,
+            "handle": p_handle,
+            "content": reply_content,
+            "date": date_str
+        })
+        post["user_replied"] = True
+        return True
+
+    def comment_on_news_item(self, news_index, tone):
+        if news_index < 0 or news_index >= len(self.news):
+            return False
+            
+        news_item = self.news[news_index]
+        p_name = self.career_player["name"] if (self.mode == "player" and self.career_player) else self.manager_name
+        
+        reply_content = ""
+        if tone == "professional":
+            reply_content = f'Declaraciones de {p_name}: "Respetamos todas las opiniones de la prensa, nuestro enfoque está en trabajar día a día."'
+            self._update_prestige(0.4)
+            self.career_stats["coach_confidence"] = min(100, self.career_stats.get("coach_confidence", 50) + 2)
+        elif tone == "ambitious":
+            reply_content = f'Declaraciones de {p_name}: "Estamos aquí para hacer historia con este club y no nos conformamos con menos que la victoria."'
+            self._update_prestige(0.8)
+            self.career_stats["fan_rel"] = min(100, self.career_stats.get("fan_rel", 50) + 3)
+        elif tone == "defensive":
+            reply_content = f'Declaraciones de {p_name}: "Esa información no refleja la realidad del vestuario. El grupo está más unido que nunca."'
+            self.career_stats["teammate_rel"] = min(100, self.career_stats.get("teammate_rel", 50) + 4)
+            
+        news_item["player_comment"] = reply_content
+        return True
 
     def _find_first_empty_slot(self, mode):
         """Finds the first empty save slot for the given mode.
@@ -1886,7 +1979,7 @@ class CareerManager:
             self.add_email("alert", "Estado en el Plantel", 
                            f"Hola {self.manager_name}. Tras ver tu nivel en pretemporada, el cuerpo técnico ha decidido que comiences como {status}. " +
                            "Sigue entrenando duro para mantener o mejorar tu puesto.")
-            self.add_news("local", f"Debut de {self.manager_name}", f"La afición del {self.player_team['name']} está ansiosa por ver a su nueva incorporación.")
+            self.add_news("local", f"Incorporación de {self.manager_name}", f"La afición del {self.player_team['name']} espera con entusiasmo ver a su nueva incorporación en los próximos entrenamientos.")
                 
         # Incorporate player creations from save_manager if needed
         # (For simplicity in this complex mode, we'll import base ones. Let's do it).
@@ -1930,7 +2023,7 @@ class CareerManager:
         # Initial Welcome News
         self.add_news("global", "¡Comienza una Nueva Era!", f"El mundo del fútbol pone sus ojos en {self.manager_name}, quien inicia hoy su carrera en {team_short}.")
         if self.mode == "player":
-             self.add_news("local", "Promesa Local debuta", f"{self.manager_name} ha firmado su primer contrato profesional con {team_short}.")
+             self.add_news("local", "Firma de Promesa Local", f"{self.manager_name} ha firmado oficialmente su primer contrato profesional con {team_short} a la espera de su debut.")
         
         # Setup Standings & Budgets
         self._init_budgets()
@@ -2639,6 +2732,23 @@ class CareerManager:
                         if "player_stats" in match_result and self.mode == "player":
                             p_name = self.career_player["name"]
                             actually_played = any(ps.get("name", "").lower().strip() == p_name.lower().strip() for ps in match_result["player_stats"])
+
+                        # Check pending captaincy news publication on next match
+                        p_news = self.career_stats.get("pending_captain_news")
+                        if p_news == "club":
+                            p_name = self.career_player["name"] if self.career_player else self.manager_name
+                            t_name = self.player_team["name"] if self.player_team else "el equipo"
+                            self.add_news("CLUB", "¡ESTRENO CON EL BRAZALETE!",
+                                          f"{p_name} ha saltado hoy al campo como el nuevo CAPITÁN del {t_name}. La hinchada lo ovacionó y el grupo se mostró unido bajo su liderazgo.",
+                                          importance=3)
+                            self.career_stats["pending_captain_news"] = None
+                        elif p_news == "nt":
+                            p_name = self.career_player["name"] if self.career_player else self.manager_name
+                            c_name = self.nationality
+                            self.add_news("INTL", "¡LÍDER Y CAPITÁN NACIONAL!",
+                                          f"{p_name} comandó hoy a la Selección ({c_name}) luciendo la cinta patria de CAPITÁN por primera vez. Un momento glorioso en su carrera.",
+                                          importance=3)
+                            self.career_stats["pending_captain_news"] = None
                         
                         # Update rating history if it's the career player
                         if "player_stats" in match_result:
@@ -3122,42 +3232,123 @@ class CareerManager:
         return True
 
     def _check_captaincy(self):
-        """Checks if the player qualifies to be the team captain."""
+        """Offers captaincy to the player via DT DMs (Club & National Team) if requirements are met."""
         if self.mode != "player" or not self.career_player: return
-        if self.career_stats.get("is_captain"): return
-        
-        conf = self.career_stats.get("coach_confidence", 0)
-        prestige = self.career_stats.get("prestige", 0)
-        seasons = self.career_stats.get("seasons_completed", 0)
-        ovr = self.career_player.get("ovr", 0)
-        # Requirements:
-        # High confidence (85+), High prestige (800+), and either 2 seasons OR being the best player (OVR 86+)
-        if conf >= 85 and prestige >= 800:
-            if seasons >= 2 or ovr >= 86:
-                self.career_stats["is_captain"] = True
-                self.add_news("CLUB", "NUEVO CAPITÁN", f"{self.career_player['name']} ha sido nombrado capitán del equipo. Un líder nato.")
-                self.add_email("board", "Brazalete de Capitán", 
-                               f"Hola {self.career_player['name']}, el cuerpo técnico y la directiva han decidido que eres el hombre ideal para portar el brazalete. "
-                               "Tu liderazgo y rendimiento son un ejemplo para todos. ¡Felicidades, Capitán!")
-                self._update_prestige(20)
+        self._ensure_social_media_exists()
+        sm = self.career_stats["social_media"]
+        date_now = self.current_date.strftime("%d %b %Y") if self.current_date else "Hoy"
+        p_name = self.career_player["name"]
+
+        # --- 1. Club Captaincy Offer ---
+        if not self.career_stats.get("is_captain") and not self.career_stats.get("captain_offer_pending"):
+            conf = self.career_stats.get("coach_confidence", 0)
+            prestige = self.career_stats.get("prestige", 0)
+            seasons = self.career_stats.get("seasons_completed", 0)
+            ovr = self.career_player.get("ovr", 0)
+
+            if conf >= 80 and prestige >= 700 and (seasons >= 1 or ovr >= 82):
+                self.career_stats["captain_offer_pending"] = True
+                dt_handle = "@dt_mister"
+                dt_name = f"DT {self.player_team['name']}" if self.player_team else "Director Técnico"
                 
-        # --- National Team Captaincy ---
-        if self.is_called_up and not self.career_stats.get("is_nt_captain"):
+                dt_dm = next((d for d in sm["dms"] if d.get("sender_type") == "dt" or d.get("handle") == dt_handle), None)
+                if not dt_dm:
+                    dt_dm = {
+                        "id": "dt_chat_permanent",
+                        "date": date_now,
+                        "sender": dt_name,
+                        "handle": dt_handle,
+                        "sender_type": "dt",
+                        "status": "unread",
+                        "thread": []
+                    }
+                    sm["dms"].insert(0, dt_dm)
+
+                offer_msg = (
+                    f"Hola {p_name}. Tras evaluar tu jerarquía, rendimiento y el respeto que te tiene el vestuario, "
+                    f"el cuerpo técnico ha decidido ofrecerte la CAPITANÍA del {self.player_team['name'] if self.player_team else 'equipo'}. "
+                    "¿Aceptas la responsabilidad de portar el brazalete?"
+                )
+                dt_dm["message"] = offer_msg
+                dt_dm["status"] = "unread"
+                dt_dm["choices"] = [
+                    {
+                        "text": "👔 Aceptar la Capitanía del Club (Asumir liderazgo)",
+                        "effects": {"coach_confidence": 10, "fan_rel": 10, "teammate_rel": 10, "prestige": 20, "accept_captain": "club"},
+                        "next_dm": {
+                            "message": "¡Excelente decisión, Capitán! Me alegra ver tu compromiso. Portarás el brazalete en nuestro próximo partido.",
+                            "choices": []
+                        }
+                    },
+                    {
+                        "text": "🛡️ Rechazar la Capitanía (Preferir concentrarme en mi juego)",
+                        "effects": {"coach_confidence": -3, "reject_captain": "club"},
+                        "next_dm": {
+                            "message": "Entendido. Respeto tu decisión de enfocarte exclusivamente en tu juego sin la presión extra del brazalete.",
+                            "choices": []
+                        }
+                    }
+                ]
+                if "thread" not in dt_dm: dt_dm["thread"] = []
+                dt_dm["thread"].append({"sender": "them", "text": offer_msg, "date": date_now})
+                self.add_email("board", "Propuesta de Capitanía",
+                               f"Estimado {p_name}, el Míster te ha enviado un mensaje directo en tus redes proponiéndote la capitanía del equipo. Revisa tu buzón de DMs.")
+
+        # --- 2. National Team Captaincy Offer ---
+        if self.is_called_up and not self.career_stats.get("is_nt_captain") and not self.career_stats.get("nt_captain_offer_pending"):
             nt_stats = self.nt_stats.get(self.nationality, {"matches": 0})
-            
-            # Dynamic requirement: Must be one of the top 3 players of the country
             from data.national_teams import build_national_squad
             nt_data, nt_roster, _ = build_national_squad(self.nationality, self.rosters, self.teams)
             top_ovr = max([p["ovr"] for p in nt_roster]) if nt_roster else 0
-            
-            # Requirements: Best player of the country (or close to it), high prestige, and 8+ matches
-            if ovr >= top_ovr - 2 and prestige >= 850 and nt_stats.get("matches", 0) >= 8:
-                self.career_stats["is_nt_captain"] = True
-                self.add_news("INTL", "LÍDER NACIONAL", f"{self.career_player['name']} es el nuevo capitán de la selección. El brazalete está en buenas manos.")
-                self.add_email("info", "Capitán de la Patria", 
-                               f"Representar a tu país es un honor, pero liderarlo como capitán es la gloria máxima. "
-                               "Has sido nombrado capitán de la selección nacional. ¡Haz historia!")
-                self._update_prestige(30)
+            ovr = self.career_player.get("ovr", 0)
+            prestige = self.career_stats.get("prestige", 0)
+
+            if ovr >= top_ovr - 3 and prestige >= 750 and nt_stats.get("matches", 0) >= 4:
+                self.career_stats["nt_captain_offer_pending"] = True
+                nt_dt_handle = f"@dt_{self.nationality.lower()}"
+                nt_dt_name = f"Seleccionador ({self.nationality})"
+
+                nt_dm = next((d for d in sm["dms"] if d.get("handle") == nt_dt_handle), None)
+                if not nt_dm:
+                    nt_dm = {
+                        "id": f"nt_dt_chat_{self.nationality}",
+                        "date": date_now,
+                        "sender": nt_dt_name,
+                        "handle": nt_dt_handle,
+                        "sender_type": "dt",
+                        "status": "unread",
+                        "thread": []
+                    }
+                    sm["dms"].insert(0, nt_dm)
+
+                nt_offer_msg = (
+                    f"Estimado {p_name}. Tu rendimiento y entrega con la camiseta nacional te convierten en el líder natural de la Selección ({self.nationality}). "
+                    "Queremos entregarte la CAPITANÍA de la Patria. ¿Aceptas la cinta de capitán?"
+                )
+                nt_dm["message"] = nt_offer_msg
+                nt_dm["status"] = "unread"
+                nt_dm["choices"] = [
+                    {
+                        "text": f"🇦🇷 Aceptar la Capitanía de la Selección (Liderar a la Patria)",
+                        "effects": {"fan_rel": 15, "teammate_rel": 10, "prestige": 30, "accept_captain": "nt"},
+                        "next_dm": {
+                            "message": "¡Es un honor tenerte como capitán! Representarás al país luciendo la cinta en el próximo partido internacional.",
+                            "choices": []
+                        }
+                    },
+                    {
+                        "text": "🛡️ Rechazar la Capitanía Nacional (Evitar la presión patriótica)",
+                        "effects": {"coach_confidence": -2, "reject_captain": "nt"},
+                        "next_dm": {
+                            "message": "Comprendemos tu decisión. Seguirás siendo una pieza fundamental de la Selección sin portar la cinta.",
+                            "choices": []
+                        }
+                    }
+                ]
+                if "thread" not in nt_dm: nt_dm["thread"] = []
+                nt_dm["thread"].append({"sender": "them", "text": nt_offer_msg, "date": date_now})
+                self.add_email("info", "Brazalete de la Selección",
+                               f"Hola {p_name}, el Míster de la Selección te ha enviado un mensaje directo en tus DMs para ofrecerte la capitanía nacional.")
 
     def _check_national_goat_status(self):
         """Determines if the player is now the GOAT of their country with flexible criteria."""
@@ -5161,8 +5352,8 @@ class CareerManager:
                        "Nuestras expectativas para esta temporada son claras: revisa tus objetivos en la pestaña de Oficina.")
         
         self.add_email("info", "Tu nueva carrera", 
-                       "¡Felicidades por tu debut profesional! Recuerda que tu rol en el equipo dependerá de tu rendimiento "
-                       "y de la confianza del mánager. ¡Buena suerte!")
+                       "¡Felicidades por la firma de tu contrato profesional! Recuerda que tu rol en el equipo dependerá de tu rendimiento "
+                       "en los entrenamientos y partidos. ¡Buena suerte!")
 
         # Contract welcome (player mode): read-only summary in the inbox
         try:

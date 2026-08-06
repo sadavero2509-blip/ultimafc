@@ -110,11 +110,78 @@ class CareerPreMatchScene:
             
         t["roster"] = sorted_roster
         return t
+
+    def _is_match_important(self):
+        tour = (self.tour_name or "").upper()
+        important_keywords = [
+            "CHAMPIONS", "LIBERTADORES", "EUROPA", "SUDAMERICANA", 
+            "FINAL", "SEMI", "COPA", "PLAYOFF", "PLAY-OFF", "INTERNACIONAL", 
+            "ELIMINATORIA", "DERBI", "CLASICO", "CLÁSICO", "MUNDIAL", "SELECCION",
+            "NATIONS", "AMERICA", "AMÉRICA", "EURO"
+        ]
+        if any(kw in tour for kw in important_keywords):
+            return True
+        if self.evt and self.evt.get("is_important"):
+            return True
+
+        s1 = career_manager.get_team_ovr(self.t1_short)
+        s2 = career_manager.get_team_ovr(self.t2_short)
+
+        # National Teams (Selecciones Nacionales) check
+        is_nt = (
+            self.team1.get("is_national") or self.team2.get("is_national") or
+            self.team1.get("league") == "NT" or self.team2.get("league") == "NT" or
+            (self.evt and self.evt.get("type") == "INTERNACIONAL")
+        )
+
+        if is_nt:
+            nt_teams = [t for t in career_manager.teams if t.get("is_national") or t.get("league") == "NT"]
+            if nt_teams:
+                max_nt = max([career_manager.get_team_ovr(t["short"]) for t in nt_teams])
+                # Match is important if both NTs are competitive (within 5 of top NT level)
+                if s1 >= max_nt - 5 and s2 >= max_nt - 5:
+                    return True
+                if s2 >= max_nt - 3 or s1 >= max_nt - 3: # Playing against or as a top nation
+                    return True
+                if abs(s1 - s2) <= 5: # Close competitive international match
+                    return True
+            return True
+
+        # Dynamic league relative OVR check (works for any league size)
+        lg = self.team1.get("league") or career_manager.league_id
+        lg_teams = [t for t in career_manager.teams if t.get("league") == lg]
+        if lg_teams:
+            ovrs = [career_manager.get_team_ovr(t["short"]) for t in lg_teams]
+            max_ovr = max(ovrs)
+            # Match is important if both teams are top-tier in their specific league
+            if s1 >= max_ovr - 4 and s2 >= max_ovr - 4:
+                return True
+            # Or if playing against top leader of the league
+            if s2 >= max_ovr - 2 and abs(s1 - s2) <= 6:
+                return True
+
+        # Standings check: Duel between top 4 teams in the league
+        table = career_manager.standings.get(lg, {})
+        if table:
+            sorted_st = sorted(table.items(), key=lambda x: x[1].get("pts", 0), reverse=True)
+            top_4_shorts = [item[0] for item in sorted_st[:4]]
+            if self.t1_short in top_4_shorts and self.t2_short in top_4_shorts:
+                return True
+
+        # Country derbies / close local rivalries
+        if self.team1.get("country") and self.team1.get("country") == self.team2.get("country"):
+            if abs(s1 - s2) <= 3:
+                return True
+
+        return False
     
     def _start_playable_match(self):
         """Launch the real playable match."""
         left_team = self._build_team_dict(self.team1, self.r1)
         right_team = self._build_team_dict(self.team2, self.r2)
+        
+        is_imp = self._is_match_important()
+        self.manager.shared_data["is_important_match"] = is_imp
         
         self.manager.shared_data["career_match_state"] = {
             "match": self.pm,
@@ -140,6 +207,8 @@ class CareerPreMatchScene:
         self.manager.transition_to(PreMatchPresentationScene)
 
     def _start_simulation(self):
+        is_imp = self._is_match_important()
+        self.manager.shared_data["is_important_match"] = is_imp
         from scenes.career_match_sim import CareerMatchSimScene
         self.manager.set_scene(CareerMatchSimScene)
 

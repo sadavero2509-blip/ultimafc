@@ -20,7 +20,7 @@ def calculate_ovr(p):
         # Mediocentros Defensivos: Defensa y Físico importan
         return int(s["defense"] * 0.4 + s["passing"] * 0.3 + phy * 0.2 + s["speed"] * 0.1)
     elif p["pos"] in ["CM", "CAM"]:
-        # Medios: Pase y Regate dominan
+        # Medios: Pase y Control dominan
         return int(s["passing"] * 0.5 + dri * 0.3 + s["speed"] * 0.1 + s["shot"] * 0.1)
     else: # ST, LW, RW
         # Delanteros: Tiro y Velocidad dominan

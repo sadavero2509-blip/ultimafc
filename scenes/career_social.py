@@ -30,8 +30,11 @@ class CareerSocialScene:
         self.relation_scroll = 0
         
         # Action states
+        self.selected_post_idx = 0
         self.show_post_popup = False
-        self.post_popup_idx = 0 # 0: Profesional, 1: Picante
+        self.post_popup_idx = 0 # 0: Profesional, 1: Picante, 2: Logro, 3: Victoria
+        self.show_reply_post_modal = False
+        self.reply_post_idx = 0
         
         # Message/Status banner
         self.msg = ""
@@ -119,14 +122,39 @@ class CareerSocialScene:
                     if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
                         self.show_post_popup = False
                     elif event.key in (pygame.K_LEFT, pygame.K_a):
-                        self.post_popup_idx = 0
+                        self.post_popup_idx = (self.post_popup_idx - 1) % 4
                     elif event.key in (pygame.K_RIGHT, pygame.K_d):
-                        self.post_popup_idx = 1
+                        self.post_popup_idx = (self.post_popup_idx + 1) % 4
+                    elif event.key in (pygame.K_UP, pygame.K_w):
+                        self.post_popup_idx = (self.post_popup_idx - 2) % 4
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        self.post_popup_idx = (self.post_popup_idx + 2) % 4
                     elif event.key == pygame.K_RETURN:
-                        tone = "professional" if self.post_popup_idx == 0 else "spicy"
+                        tones = ["professional", "spicy", "achievement", "victory"]
+                        tone = tones[self.post_popup_idx]
                         if career_manager.post_custom_message(tone):
                             self._set_msg("¡Publicación enviada con éxito!")
                         self.show_post_popup = False
+            return
+
+        if self.show_reply_post_modal:
+            for event in events:
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        self.show_reply_post_modal = False
+                    elif event.key in (pygame.K_UP, pygame.K_w):
+                        self.reply_post_idx = (self.reply_post_idx - 1) % 3
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        self.reply_post_idx = (self.reply_post_idx + 1) % 3
+                    elif event.key == pygame.K_RETURN:
+                        tones = ["positive", "grateful", "spicy"]
+                        tone = tones[self.reply_post_idx]
+                        posts = career_manager.career_stats.get("social_media", {}).get("posts", [])
+                        if posts and self.selected_post_idx < len(posts):
+                            target_post = posts[self.selected_post_idx]
+                            if career_manager.reply_to_post(target_post["id"], tone):
+                                self._set_msg("¡Comentario publicado en la red social!")
+                        self.show_reply_post_modal = False
             return
 
         for event in events:
@@ -151,14 +179,26 @@ class CareerSocialScene:
                 
                 # Tab 1: Feed
                 elif self.sub_tabs[self.tab_idx]["id"] == "feed":
-                    if event.key in (pygame.K_UP, pygame.K_w):
-                        self.post_scroll = max(0, self.post_scroll - 1)
-                    elif event.key in (pygame.K_DOWN, pygame.K_s):
-                        if len(posts) > 3:
-                            self.post_scroll = min(len(posts) - 3, self.post_scroll + 1)
-                    elif event.key == pygame.K_c:
-                        self.show_post_popup = True
-                        self.post_popup_idx = 0
+                    if posts:
+                        if event.key in (pygame.K_UP, pygame.K_w):
+                            self.selected_post_idx = max(0, self.selected_post_idx - 1)
+                            if self.selected_post_idx < self.post_scroll:
+                                self.post_scroll = self.selected_post_idx
+                        elif event.key in (pygame.K_DOWN, pygame.K_s):
+                            self.selected_post_idx = min(len(posts) - 1, self.selected_post_idx + 1)
+                            if self.selected_post_idx >= self.post_scroll + 3:
+                                self.post_scroll = self.selected_post_idx - 2
+                        elif event.key == pygame.K_c:
+                            self.show_post_popup = True
+                            self.post_popup_idx = 0
+                        elif event.key in (pygame.K_r, pygame.K_RETURN):
+                            if self.selected_post_idx < len(posts):
+                                target_post = posts[self.selected_post_idx]
+                                if not target_post.get("user_replied"):
+                                    self.show_reply_post_modal = True
+                                    self.reply_post_idx = 0
+                                else:
+                                    self._set_msg("Ya respondiste a esta publicación.")
                 
                 # Tab 2: DMs
                 elif self.sub_tabs[self.tab_idx]["id"] == "dms":
@@ -194,27 +234,73 @@ class CareerSocialScene:
                                 self.dm_focus = "chat"
                                 self.selected_choice_idx = 0
                     else:  # self.dm_focus == "chat"
-                        if event.key in (pygame.K_UP, pygame.K_w):
-                            if dms:
-                                active_dm = dms[self.selected_dm_idx]
-                                if active_dm["status"] in ("unread", "read") and active_dm.get("choices"):
-                                    self.selected_choice_idx = (self.selected_choice_idx - 1) % len(active_dm["choices"])
-                        elif event.key in (pygame.K_DOWN, pygame.K_s):
-                            if dms:
-                                active_dm = dms[self.selected_dm_idx]
-                                if active_dm["status"] in ("unread", "read") and active_dm.get("choices"):
-                                    self.selected_choice_idx = (self.selected_choice_idx + 1) % len(active_dm["choices"])
-                        elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_ESCAPE):
-                            self.dm_focus = "list"
-                        elif event.key == pygame.K_RETURN:
-                            if dms:
-                                active_dm = dms[self.selected_dm_idx]
-                                if active_dm["status"] in ("unread", "read") and active_dm.get("choices"):
+                        if dms:
+                            active_dm = dms[self.selected_dm_idx]
+                            is_dt = (active_dm.get("sender_type") == "dt" or active_dm.get("handle") == "@dt_mister")
+                            is_agent = (active_dm.get("sender_type") == "agent" or active_dm.get("handle", "").endswith("_agt"))
+                            has_choices = (active_dm["status"] in ("unread", "read") and len(active_dm.get("choices", [])) > 0)
+                            
+                            dt_petitions = [
+                                {"id": "starter", "text": "📋 Pedir Titularidad / Más minutos"},
+                                {"id": "rest", "text": "🛌 Pedir Descanso por fatiga"},
+                                {"id": "position", "text": "📐 Pedir Cambio a posición natural"},
+                                {"id": "transfer", "text": "🤝 Pedir Solicitud de Traspaso"}
+                            ]
+                            agent_petitions = [
+                                {"id": "sponsors", "text": "💰 Buscar Acuerdos de Patrocinio"},
+                                {"id": "renew", "text": "📄 Negociar Renovación Salarial"},
+                                {"id": "transfer_market", "text": "🤝 Buscar Ofertas de Traspaso"},
+                                {"id": "pr_boost", "text": "📸 Campaña de Imagen (RRPP)"}
+                            ]
+                            
+                            current_petitions = dt_petitions if is_dt else (agent_petitions if is_agent else [])
+                            current_options_count = len(active_dm["choices"]) if has_choices else len(current_petitions)
+                            
+                            if event.key in (pygame.K_UP, pygame.K_w):
+                                if current_options_count > 0:
+                                    self.selected_choice_idx = (self.selected_choice_idx - 1) % current_options_count
+                            elif event.key in (pygame.K_DOWN, pygame.K_s):
+                                if current_options_count > 0:
+                                    self.selected_choice_idx = (self.selected_choice_idx + 1) % current_options_count
+                            elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_ESCAPE):
+                                self.dm_focus = "list"
+                            elif event.key == pygame.K_RETURN:
+                                if has_choices:
                                     success = career_manager.reply_to_dm(active_dm["id"], self.selected_choice_idx)
                                     if success:
-                                        self._set_msg("Respuesta enviada y consecuencias aplicadas.")
+                                        self._set_msg("Respuesta enviada al chat.")
                                         self.selected_choice_idx = 0
-                                        self.dm_focus = "list"
+                                elif is_dt and current_options_count > 0:
+                                    pet_id = dt_petitions[self.selected_choice_idx]["id"]
+                                    success = career_manager.send_dt_request(pet_id)
+                                    if success:
+                                        self._set_msg("Petición enviada al DT.")
+                                        self.selected_choice_idx = 0
+                                elif is_agent and current_options_count > 0:
+                                    pet_id = agent_petitions[self.selected_choice_idx]["id"]
+                                    success = career_manager.send_agent_request(pet_id)
+                                    if success:
+                                        self._set_msg("Petición enviada al Representante.")
+                                        self.selected_choice_idx = 0
+                            elif (is_dt or is_agent) and not has_choices:
+                                req_fn = career_manager.send_dt_request if is_dt else career_manager.send_agent_request
+                                target_name = "al DT" if is_dt else "al Representante"
+                                if event.key in (pygame.K_1, pygame.K_KP1):
+                                    req_fn(current_petitions[0]["id"])
+                                    self._set_msg(f"Petición enviada {target_name}.")
+                                    self.selected_choice_idx = 0
+                                elif event.key in (pygame.K_2, pygame.K_KP2):
+                                    req_fn(current_petitions[1]["id"])
+                                    self._set_msg(f"Petición enviada {target_name}.")
+                                    self.selected_choice_idx = 0
+                                elif event.key in (pygame.K_3, pygame.K_KP3):
+                                    req_fn(current_petitions[2]["id"])
+                                    self._set_msg(f"Petición enviada {target_name}.")
+                                    self.selected_choice_idx = 0
+                                elif event.key in (pygame.K_4, pygame.K_KP4):
+                                    req_fn(current_petitions[3]["id"])
+                                    self._set_msg(f"Petición enviada {target_name}.")
+                                    self.selected_choice_idx = 0
                 
                 # Tab: Relations
                 elif self.sub_tabs[self.tab_idx]["id"] == "relations":
@@ -354,12 +440,14 @@ class CareerSocialScene:
         # Render Popups
         if self.show_post_popup:
             self._draw_post_popup(surface)
+        if self.show_reply_post_modal:
+            self._draw_reply_post_modal(surface)
 
         # Bottom Hint Bar
         pygame.draw.rect(surface, (15, 18, 30), (0, HEIGHT - 45, WIDTH, 45))
         hint_text = "Q/E o TAB Cambiar Pestaña  ·  ↑↓ Navegar  ·  ENTER Seleccionar  ·  ESC Volver"
         if active_id == "feed":
-            hint_text += "  ·  [C] Crear Publicación"
+            hint_text = "↑↓ Navegar Feed  ·  [R/ENTER] Comentar Post  ·  [C] Crear Publicación  ·  TAB Pestañas  ·  ESC Volver"
         elif active_id == "cm":
             hint_text += "  ·  [1] Estrategia PR  ·  [2] Estrategia Picante"
         elif active_id == "dms":
@@ -388,7 +476,14 @@ class CareerSocialScene:
         py = 185
         visible_posts = posts[self.post_scroll : self.post_scroll + 3]
         for i, post in enumerate(visible_posts):
-            p_rect = pygame.Rect(70, py, feed_rect.width - 40, 120)
+            real_idx = self.post_scroll + i
+            is_sel = (self.selected_post_idx == real_idx)
+            
+            comments = post.get("comments", [])
+            has_comments = len(comments) > 0
+            p_height = 145 if has_comments else 120
+            
+            p_rect = pygame.Rect(70, py, feed_rect.width - 40, p_height)
             
             # Post background based on type
             colors = {
@@ -398,13 +493,16 @@ class CareerSocialScene:
                 "club": (32, 22, 45)
             }
             bg_c = colors.get(post.get("type", "fan"), (20, 24, 40))
+            if is_sel:
+                bg_c = (bg_c[0]+12, bg_c[1]+12, bg_c[2]+20)
+                
             pygame.draw.rect(surface, bg_c, p_rect, border_radius=8)
-            pygame.draw.rect(surface, (55, 62, 85), p_rect, 1, border_radius=8)
+            border_c = UI_ACCENT if is_sel else (55, 62, 85)
+            pygame.draw.rect(surface, border_c, p_rect, 2 if is_sel else 1, border_radius=8)
             
             # Icon Profile
             pygame.draw.circle(surface, UI_ACCENT, (p_rect.left + 35, p_rect.top + 35), 20)
             try:
-                # First letter of name as icon
                 letter = post["author"][0].upper()
                 let_s = self.font_bold.render(letter, True, BLACK)
                 surface.blit(let_s, (p_rect.left + 35 - let_s.get_width()//2, p_rect.top + 35 - let_s.get_height()//2))
@@ -435,12 +533,29 @@ class CareerSocialScene:
                     cy += 20
             surface.blit(self.font_text.render(line, True, UI_TEXT), (p_rect.left + 65, cy))
             
-            # Likes & Retweets
+            # Render Indented Comment if exists
+            if has_comments:
+                c = comments[-1] # latest comment
+                comm_rect = pygame.Rect(p_rect.left + 65, p_rect.top + 80, p_rect.width - 80, 32)
+                pygame.draw.rect(surface, (20, 35, 50), comm_rect, border_radius=6)
+                pygame.draw.rect(surface, (50, 90, 140), comm_rect, 1, border_radius=6)
+                c_txt = f"💬 {c['author']} ({c['handle']}): {c['content']}"
+                if len(c_txt) > 75: c_txt = c_txt[:72] + "..."
+                cs = self.font_hint.render(c_txt, True, (190, 225, 255))
+                surface.blit(cs, (comm_rect.left + 10, comm_rect.top + 7))
+            
+            # Likes & Retweets & Reply status
             stat_txt = f"Likes: {post['likes']:,}   RTs: {post['retweets']:,}"
             stat_s = self.font_small.render(stat_txt, True, (130, 160, 200))
             surface.blit(stat_s, (p_rect.left + 65, p_rect.bottom - 22))
             
-            py += 135
+            if post.get("user_replied"):
+                rep_s = self.font_hint.render("✔ Comentado", True, (100, 230, 150))
+            else:
+                rep_s = self.font_hint.render("[R / ENTER] Comentar", True, UI_ACCENT)
+            surface.blit(rep_s, (p_rect.right - rep_s.get_width() - 15, p_rect.bottom - 22))
+            
+            py += p_height + 12
             
         # Draw scrollbars if needed
         if len(posts) > 3:
@@ -555,109 +670,152 @@ class CareerSocialScene:
             aff_s = self.font_small.render(affinity_txt, True, UI_ACCENT)
             surface.blit(aff_s, (badge_rect.right + 10, chat_rect.top + 20))
         
-        # Message bubble (received)
-        msg_bubble_rect = pygame.Rect(chat_rect.left + 25, chat_rect.top + 80, chat_rect.width - 50, 110)
-        pygame.draw.rect(surface, (35, 42, 66), msg_bubble_rect, border_radius=10)
+        # Thread Area
+        thread_list = active_dm.get("thread")
+        if not thread_list:
+            thread_list = [{"sender": "them", "text": active_dm.get("message", ""), "date": active_dm.get("date", "")}]
+
+        is_dt = (active_dm.get("sender_type") == "dt" or active_dm.get("handle") == "@dt_mister")
+        is_agent = (active_dm.get("sender_type") == "agent" or active_dm.get("handle", "").endswith("_agt"))
+        has_choices = (active_dm["status"] in ("unread", "read") and len(active_dm.get("choices", [])) > 0)
         
-        # Message bubble text
-        words = active_dm["message"].split(' ')
-        line = ""
-        m_y = msg_bubble_rect.top + 15
-        for w in words:
-            test_line = line + w + " "
-            if self.font_text.size(test_line)[0] < msg_bubble_rect.width - 40:
-                line = test_line
+        dt_petitions = [
+            {"id": "starter", "text": "📋 Pedir Titularidad / Más minutos"},
+            {"id": "rest", "text": "🛌 Pedir Descanso por fatiga muscular"},
+            {"id": "position", "text": "📐 Pedir Cambio a posición natural"},
+            {"id": "transfer", "text": "🤝 Pedir Solicitud de Traspaso / Cesión"}
+        ]
+        agent_petitions = [
+            {"id": "sponsors", "text": "💰 Buscar Acuerdos de Patrocinio"},
+            {"id": "renew", "text": "📄 Negociar Renovación Salarial"},
+            {"id": "transfer_market", "text": "🤝 Buscar Ofertas de Traspaso"},
+            {"id": "pr_boost", "text": "📸 Campaña de Imagen (RRPP)"}
+        ]
+        
+        petitions_list = dt_petitions if is_dt else (agent_petitions if is_agent else [])
+        display_choices = active_dm["choices"] if has_choices else petitions_list
+        n_choices = len(display_choices)
+        
+        choice_item_h = 36
+        visible_items = min(n_choices, 4) if n_choices > 0 else 0
+        panel_h = (28 + visible_items * choice_item_h + 8) if n_choices > 0 else 40
+        
+        # Bottom options panel rect
+        panel_rect = pygame.Rect(chat_rect.left + 15, chat_rect.bottom - panel_h - 10, chat_rect.width - 30, panel_h)
+        
+        # Render scrollable thread bubbles in remaining vertical space
+        thread_top = chat_rect.top + 65
+        thread_bottom = panel_rect.top - 10
+        thread_height = thread_bottom - thread_top
+        
+        # Render up to last 4 messages in thread
+        max_bubbles = 4
+        sub_thread = thread_list[-max_bubbles:]
+        b_y = thread_top
+        
+        for msg_item in sub_thread:
+            is_me = (msg_item.get("sender") == "me")
+            m_text = msg_item.get("text", "")
+            m_date = msg_item.get("date", "")
+            
+            # Text layout & wrapping
+            max_b_w = int((chat_rect.width - 20) * 0.72)
+            words = m_text.split(' ')
+            lines = []
+            cur_line = ""
+            for w in words:
+                test = cur_line + w + " "
+                if self.font_small.size(test)[0] < max_b_w - 24:
+                    cur_line = test
+                else:
+                    lines.append(cur_line)
+                    cur_line = w + " "
+            if cur_line: lines.append(cur_line)
+            
+            b_h = 22 + len(lines) * 18
+            if b_y + b_h > thread_bottom:
+                break
+                
+            if is_me:
+                b_x = chat_rect.right - 15 - max_b_w
+                b_bg = (25, 75, 55) # Emerald Green for Player
+                b_border = (50, 160, 110)
+                header_str = f"Tú ({m_date})"
+                header_col = (150, 240, 190)
             else:
-                surface.blit(self.font_text.render(line, True, WHITE), (msg_bubble_rect.left + 20, m_y))
-                line = w + " "
-                m_y += 22
-        surface.blit(self.font_text.render(line, True, WHITE), (msg_bubble_rect.left + 20, m_y))
-        
-        # Choices panel (Bottom of chat) — vertical scrollable list
-        if active_dm["status"] in ("unread", "read"):
-            choices = active_dm["choices"]
-            n_choices = len(choices)
+                b_x = chat_rect.left + 15
+                b_bg = (32, 40, 62) # Dark Navy Blue for Sender
+                b_border = (65, 80, 120)
+                header_str = f"{active_dm['sender']} ({m_date})"
+                header_col = (160, 190, 240)
+                
+            b_rect = pygame.Rect(b_x, b_y, max_b_w, b_h)
+            pygame.draw.rect(surface, b_bg, b_rect, border_radius=10)
+            pygame.draw.rect(surface, b_border, b_rect, 1, border_radius=10)
             
-            # Dynamic panel height: show up to 3.5 choices at a time, each ~38px
-            choice_item_h = 38
-            visible_items = min(n_choices, 4)
-            panel_h = 30 + visible_items * choice_item_h + 10
-            panel_rect = pygame.Rect(chat_rect.left + 20, chat_rect.bottom - panel_h - 10, chat_rect.width - 40, panel_h)
+            # Header
+            h_s = self.font_hint.render(header_str, True, header_col)
+            surface.blit(h_s, (b_rect.left + 12, b_rect.top + 3))
+            
+            # Body lines
+            ty = b_rect.top + 18
+            for l_str in lines:
+                l_s = self.font_small.render(l_str, True, WHITE)
+                surface.blit(l_s, (b_rect.left + 12, ty))
+                ty += 18
+                
+            b_y += b_h + 6
+
+        # Render choices or DT petition panel
+        if n_choices > 0:
             pygame.draw.rect(surface, (25, 30, 48), panel_rect, border_radius=10)
+            pygame.draw.rect(surface, (60, 70, 100), panel_rect, 1, border_radius=10)
             
-            # Prompt
-            prompt_text = "► SELECCIONA TU RESPUESTA (W/S o Flechas + ENTER):" if self.dm_focus == "chat" else "► ENTER / D / Flecha Derecha PARA RESPONDER MENSAJE:"
+            if has_choices:
+                prompt_text = "► SELECCIONA TU RESPUESTA (W/S o Flechas + ENTER):" if self.dm_focus == "chat" else "► ENTER / D PARA RESPONDER:"
+            elif is_dt:
+                prompt_text = "► PETICIONES DISPONIBLES AL DT (1-4 o W/S + ENTER):" if self.dm_focus == "chat" else "► ENTER PARA ABRIR MENÚ DE PETICIONES:"
+            elif is_agent:
+                prompt_text = "► PETICIONES AL REPRESENTANTE (1-4 o W/S + ENTER):" if self.dm_focus == "chat" else "► ENTER PARA ABRIR MENÚ DE PETICIONES:"
+            else:
+                prompt_text = "► SELECCIONA UNA OPCIÓN:"
+                
             prompt_s = self.font_small.render(prompt_text, True, UI_ACCENT)
-            surface.blit(prompt_s, (panel_rect.left + 15, panel_rect.top + 8))
+            surface.blit(prompt_s, (panel_rect.left + 15, panel_rect.top + 6))
             
-            # Scrollable vertical choice list
-            choice_start_y = panel_rect.top + 28
-            # Auto-scroll so selected choice is always visible
+            choice_start_y = panel_rect.top + 26
             max_scroll = max(0, n_choices - visible_items)
             ch_scroll = min(max(0, self.selected_choice_idx - visible_items + 2), max_scroll)
             
-            # Clip area
-            clip_rect = pygame.Rect(panel_rect.left + 8, choice_start_y, panel_rect.width - 16, visible_items * choice_item_h)
-            
             for j in range(ch_scroll, min(ch_scroll + visible_items, n_choices)):
-                c = choices[j]
+                c = display_choices[j]
                 is_ch_sel = (self.selected_choice_idx == j) and (self.dm_focus == "chat")
                 row_y = choice_start_y + (j - ch_scroll) * choice_item_h
-                ch_rect = pygame.Rect(panel_rect.left + 12, row_y, panel_rect.width - 24, choice_item_h - 4)
+                ch_rect = pygame.Rect(panel_rect.left + 10, row_y, panel_rect.width - 20, choice_item_h - 4)
                 
-                bg_ch = (45, 55, 90) if is_ch_sel else (30, 35, 55)
+                bg_ch = (45, 60, 100) if is_ch_sel else (30, 35, 55)
                 pygame.draw.rect(surface, bg_ch, ch_rect, border_radius=6)
                 if is_ch_sel:
                     pygame.draw.rect(surface, UI_ACCENT, ch_rect, 2, border_radius=6)
-                    # Selection indicator arrow
                     arrow = self.font_small.render("▶", True, UI_ACCENT)
-                    surface.blit(arrow, (ch_rect.left + 6, ch_rect.top + 10))
+                    surface.blit(arrow, (ch_rect.left + 6, ch_rect.top + 8))
                 
-                # Choice number + text (truncate if too long)
                 ch_prefix = f"{j + 1}. "
-                c_str = c.get("text") if isinstance(c, dict) else (c if isinstance(c, str) else str(c))
-                if not c_str: c_str = str(c)
+                c_str = c.get("text") if isinstance(c, dict) else str(c)
                 ch_text = ch_prefix + c_str
                 max_text_w = ch_rect.width - 30
-                # Truncate to fit
                 while self.font_small.size(ch_text)[0] > max_text_w and len(ch_text) > 10:
                     ch_text = ch_text[:len(ch_text) - 4] + "..."
                 
                 text_x = ch_rect.left + (22 if is_ch_sel else 10)
                 ct_color = WHITE if is_ch_sel else (180, 180, 200)
                 ct_s = self.font_small.render(ch_text, True, ct_color)
-                surface.blit(ct_s, (text_x, ch_rect.top + 11))
-            
-            # Scroll indicators
-            if ch_scroll > 0:
-                up_arrow = self.font_small.render("▲ más opciones", True, UI_TEXT_DIM)
-                surface.blit(up_arrow, (panel_rect.right - 120, choice_start_y - 2))
-            if ch_scroll + visible_items < n_choices:
-                dn_arrow = self.font_small.render("▼ más opciones", True, UI_TEXT_DIM)
-                surface.blit(dn_arrow, (panel_rect.right - 120, panel_rect.bottom - 14))
+                surface.blit(ct_s, (text_x, ch_rect.top + 8))
         else:
-            # Replied view
-            rep_rect = pygame.Rect(chat_rect.left + 25, chat_rect.bottom - 120, chat_rect.width - 50, 90)
-            pygame.draw.rect(surface, (20, 40, 30), rep_rect, border_radius=10)
-            pygame.draw.rect(surface, (50, 150, 80), rep_rect, 1, border_radius=10)
-            
-            done_icon = self.font_title.render("[OK]", True, (100, 255, 120))
-            surface.blit(done_icon, (rep_rect.left + 25, rep_rect.centery - done_icon.get_height()//2))
-            
-            reply_idx = active_dm.get("reply_selected")
-            if reply_idx is not None and reply_idx < len(active_dm.get("choices", [])):
-                sel_choice = active_dm["choices"][reply_idx]
-                sel_str = sel_choice.get("text") if isinstance(sel_choice, dict) else (sel_choice if isinstance(sel_choice, str) else str(sel_choice))
-                if not sel_str: sel_str = str(sel_choice)
-                replied_txt = f'Respondido: "{sel_str}"'
-                if len(replied_txt) > 42: replied_txt = replied_txt[:39] + "..."
-            else:
-                replied_txt = "Conversación finalizada."
-            
-            r_s1 = self.font_bold.render("MENSAJE RESPONDIDO", True, (100, 255, 120))
-            surface.blit(r_s1, (rep_rect.left + 90, rep_rect.top + 20))
-            r_s2 = self.font_text.render(replied_txt, True, WHITE)
-            surface.blit(r_s2, (rep_rect.left + 90, rep_rect.top + 45))
+            # Simple status banner when conversation has ended & not DT
+            pygame.draw.rect(surface, (25, 30, 48), panel_rect, border_radius=8)
+            info_s = self.font_text.render("✓ Conversación al día. No hay respuestas pendientes.", True, (140, 200, 160))
+            surface.blit(info_s, (panel_rect.centerx - info_s.get_width()//2, panel_rect.centery - info_s.get_height()//2))
 
     def _draw_cm_tab(self, surface):
         sm = career_manager.career_stats["social_media"]
@@ -744,51 +902,100 @@ class CareerSocialScene:
         ov.set_alpha(150)
         surface.blit(ov, (0, 0))
         
-        # Popup box
-        box_w, box_h = 560, 300
+        # Popup box (wider for 2x2 grid)
+        box_w, box_h = 620, 360
         box = pygame.Rect(WIDTH//2 - box_w//2, HEIGHT//2 - box_h//2, box_w, box_h)
         pygame.draw.rect(surface, (20, 25, 45), box, border_radius=15)
         pygame.draw.rect(surface, UI_ACCENT, box, 2, border_radius=15)
         
         # Header
         hdr = self.font_sub.render("REDACTAR PUBLICACIÓN NUEVA", True, UI_ACCENT)
-        surface.blit(hdr, (box.left + 30, box.top + 25))
+        surface.blit(hdr, (box.left + 30, box.top + 20))
         
         # Prompt
         pr = self.font_text.render("Elige el tono de tu publicación en tus redes:", True, WHITE)
-        surface.blit(pr, (box.left + 30, box.top + 70))
+        surface.blit(pr, (box.left + 30, box.top + 55))
         
-        # Two options: Professional vs Spicy
+        # 4 options in a 2x2 grid
         opts = [
-            {"name": "[PRO] Profesional & Humilde", "desc": "Enfocado en el equipo, entrenamiento y respeto.\nEfectos: +DT Confianza, +Prestigio estable."},
-            {"name": "[HOT] Picante & Hype", "desc": "Presume de tu nivel, busca provocar o agrandarte.\nEfectos: +++Prestigio/Fama, -DT Confianza, +Afición."}
+            {"name": "👔 Profesional", "desc": "Enfocado en el equipo y trabajo.\n+DT Confianza, +Prestigio."},
+            {"name": "🔥 Picante & Hype", "desc": "Presume tu nivel, provoca.\n+++Fama, -DT Confianza, +Afición."},
+            {"name": "🏆 Celebrar Logro", "desc": "Publica tras un objetivo cumplido.\n++Prestigio, +Afición, +DT."},
+            {"name": "⚽ Celebrar Victoria", "desc": "Festeja los últimos resultados.\n+Prestigio, +Afición, +Vestuario."}
         ]
         
-        bx = box.left + 30
         opt_w = (box_w - 80) // 2
+        opt_h = 90
+        positions = [
+            (box.left + 25, box.top + 90),
+            (box.left + 25 + opt_w + 10, box.top + 90),
+            (box.left + 25, box.top + 90 + opt_h + 10),
+            (box.left + 25 + opt_w + 10, box.top + 90 + opt_h + 10)
+        ]
+        
         for i, opt in enumerate(opts):
             is_sel = (self.post_popup_idx == i)
-            o_rect = pygame.Rect(bx, box.top + 115, opt_w, 110)
+            ox, oy = positions[i]
+            o_rect = pygame.Rect(ox, oy, opt_w, opt_h)
             
             bg_c = (42, 50, 80) if is_sel else (28, 32, 52)
             pygame.draw.rect(surface, bg_c, o_rect, border_radius=8)
             if is_sel:
                 pygame.draw.rect(surface, UI_ACCENT, o_rect, 2, border_radius=8)
                 
-            # Render Option Name
             name_s = self.font_bold.render(opt["name"], True, WHITE)
-            surface.blit(name_s, (o_rect.left + 15, o_rect.top + 15))
+            surface.blit(name_s, (o_rect.left + 15, o_rect.top + 12))
             
-            # Wrap description lines
             for idx, line in enumerate(opt["desc"].split('\n')):
                 line_s = self.font_hint.render(line, True, UI_TEXT_DIM if not is_sel else (180, 210, 255))
-                surface.blit(line_s, (o_rect.left + 15, o_rect.top + 45 + idx * 18))
-                
-            bx += opt_w + 20
+                surface.blit(line_s, (o_rect.left + 15, o_rect.top + 40 + idx * 18))
             
         # Hint inside popup
-        hint_s = self.font_hint.render("←/→ Seleccionar  ·  ENTER Publicar  ·  ESC Cancelar", True, UI_TEXT_DIM)
+        hint_s = self.font_hint.render("←→↑↓ Seleccionar  ·  ENTER Publicar  ·  ESC Cancelar", True, UI_TEXT_DIM)
         surface.blit(hint_s, (box.centerx - hint_s.get_width()//2, box.bottom - 30))
+
+    def _draw_reply_post_modal(self, surface):
+        ov = pygame.Surface((WIDTH, HEIGHT))
+        ov.fill(BLACK)
+        ov.set_alpha(160)
+        surface.blit(ov, (0, 0))
+        
+        box_w, box_h = 540, 290
+        box = pygame.Rect(WIDTH//2 - box_w//2, HEIGHT//2 - box_h//2, box_w, box_h)
+        pygame.draw.rect(surface, (20, 25, 45), box, border_radius=15)
+        pygame.draw.rect(surface, UI_ACCENT, box, 2, border_radius=15)
+        
+        hdr = self.font_sub.render("COMENTAR PUBLICACIÓN", True, UI_ACCENT)
+        surface.blit(hdr, (box.left + 25, box.top + 18))
+        
+        pr = self.font_text.render("Elige el tono de tu respuesta:", True, WHITE)
+        surface.blit(pr, (box.left + 25, box.top + 52))
+        
+        opts = [
+            {"title": "👍 Respuesta Positiva", "desc": "De acuerdo con la publicación, apoyo al equipo. (+Afición, +Prestigio)"},
+            {"title": "❤️ Respuesta Agradecida", "desc": "Agradecer el apoyo de la hinchada y compañeros. (+Afición, +Vestuario)"},
+            {"title": "🔥 Respuesta Picante", "desc": "Responder a los críticos con actitud desafiante. (++Fama, +Afición, -DT)"}
+        ]
+        
+        by = box.top + 85
+        for i, opt in enumerate(opts):
+            is_sel = (self.reply_post_idx == i)
+            o_rect = pygame.Rect(box.left + 25, by, box_w - 50, 50)
+            bg_c = (42, 52, 82) if is_sel else (26, 30, 50)
+            pygame.draw.rect(surface, bg_c, o_rect, border_radius=8)
+            if is_sel:
+                pygame.draw.rect(surface, UI_ACCENT, o_rect, 2, border_radius=8)
+                
+            t_s = self.font_bold.render(opt["title"], True, WHITE if is_sel else UI_TEXT_DIM)
+            surface.blit(t_s, (o_rect.left + 15, o_rect.top + 6))
+            
+            d_s = self.font_hint.render(opt["desc"], True, (170, 190, 220))
+            surface.blit(d_s, (o_rect.left + 15, o_rect.top + 28))
+            
+            by += 58
+        
+        hint_s = self.font_hint.render("↑↓ Seleccionar  ·  ENTER Publicar  ·  ESC Cancelar", True, UI_TEXT_DIM)
+        surface.blit(hint_s, (box.centerx - hint_s.get_width()//2, box.bottom - 25))
 
     def _draw_nickname_setup(self, surface):
         surface.fill((10, 12, 20))
