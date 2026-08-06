@@ -55,12 +55,47 @@ def get_team_config(team_short):
     return data.get("team_configs", {}).get(team_short, None)
 
 def save_team_config(team_short, config):
-    """Save config for a team. config = {formation, starter_indices, reserve_indices}"""
+    """Save config for a team. config = {formation, starter_indices, reserve_indices, lineup_order}"""
     data = load_user_data()
     if "team_configs" not in data:
         data["team_configs"] = {}
     data["team_configs"][team_short] = config
     save_user_data(data)
+
+def apply_saved_team_config(team):
+    """Aplica la formación y alineación guardadas por el usuario a un objeto de equipo."""
+    if not team or not isinstance(team, dict) or "short" not in team:
+        return team
+    tc = get_team_config(team["short"])
+    if not tc:
+        return team
+    
+    # Formación
+    if "formation" in tc and tc["formation"]:
+        team["formation"] = tc["formation"]
+    
+    # Jugadores extra creados
+    roster = list(team.get("roster", []))
+    extras = tc.get("extra_players", [])
+    for exp in extras:
+        if not any(p.get("name") == exp.get("name") for p in roster):
+            roster.append(exp)
+    
+    # Orden de alineación (Titulares primero)
+    saved_order = tc.get("lineup_order", None)
+    if saved_order:
+        ordered = []
+        remaining = list(roster)
+        for name in saved_order:
+            match = next((p for p in remaining if p.get("name") == name), None)
+            if match:
+                ordered.append(match)
+                remaining.remove(match)
+        ordered.extend(remaining)
+        roster = ordered
+    
+    team["roster"] = roster
+    return team
 
 def get_created_players():
     """Get list of user-created players."""

@@ -33,12 +33,15 @@ class TeamEditorScene:
         if not self.teams:
             self.teams = TEAMS[:]
 
-        self.team_idx = 0
+        self.team_idx = self.context.get("team_idx", 0)
+        if self.team_idx >= len(self.teams):
+            self.team_idx = 0
+
         self.mode = self.MODE_MENU
         self.menu_idx = 0
         self.menu_items = [
-            {"id": "formation", "name": "FORMACIÓN", "icon": "[FORM]", "desc": "Cambiar la formación táctica"},
-            {"id": "lineup", "name": "ALINEACIÓN", "icon": "[LINEUP]", "desc": "Intercambiar titulares y suplentes"},
+            {"id": "formation", "name": "FORMACIÓN", "icon": "[FORM]", "desc": "Cambiar la formación táctica predeterminada"},
+            {"id": "lineup", "name": "ALINEACIÓN", "icon": "[LINEUP]", "desc": "Definir el 11 inicial y los suplentes"},
             {"id": "create", "name": "CREAR JUGADOR", "icon": "[NEW]", "desc": "Crear un nuevo jugador personalizado"},
         ]
 
@@ -50,6 +53,12 @@ class TeamEditorScene:
         self.lineup_cursor = 0
         self.lineup_selected = None
         self.lineup_roster = []
+        self.lineup_dirty = False
+
+        # Confirm Modal State & Toast Notifications
+        self.modal_state = None  # None or dict: {"type": "formation"|"lineup", ...}
+        self.toast_msg = ""
+        self.toast_timer = 0.0
 
         # Create player
         self.create_step = 0  # 0=name, 1=pos_cat, 2=pos, 3=stats, 4=assign
@@ -97,6 +106,14 @@ class TeamEditorScene:
     def handle_events(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN:
+                # Interceptar teclas si el modal de confirmación está abierto
+                if self.modal_state is not None:
+                    if event.key == pygame.K_RETURN:
+                        self._confirm_modal_action()
+                    elif event.key == pygame.K_ESCAPE:
+                        self._cancel_modal_action()
+                    return
+
                 if self.mode == self.MODE_MENU:
                     self._handle_menu(event)
                 elif self.mode == self.MODE_FORMATION:
@@ -135,12 +152,20 @@ class TeamEditorScene:
             self.form_idx = (self.form_idx - 1) % len(self.formations)
         elif event.key in (pygame.K_RIGHT, pygame.K_d):
             self.form_idx = (self.form_idx + 1) % len(self.formations)
+        elif event.key in (pygame.K_q, pygame.K_e):
+            # Cambiar equipo directamente desde la vista de formación
+            step = -1 if event.key == pygame.K_q else 1
+            self.team_idx = (self.team_idx + step) % len(self.teams)
+            self._load_formation()
         elif event.key == pygame.K_RETURN:
+            # Pedir confirmación antes de guardar la nueva formación
             team = self._current_team()
-            save_team_config(team["short"], {
-                "formation": self.formations[self.form_idx],
-                **self._get_existing_config(team["short"])
-            })
+            new_form = self.formations[self.form_idx]
+            self.modal_state = {
+                "type": "formation",
+                "formation": new_form,
+                "team": team
+            }
         elif event.key == pygame.K_ESCAPE:
             self.mode = self.MODE_MENU
 
@@ -150,24 +175,46 @@ class TeamEditorScene:
             self.lineup_cursor = max(0, self.lineup_cursor - 1)
         elif event.key in (pygame.K_DOWN, pygame.K_s):
             self.lineup_cursor = min(len(roster) - 1, self.lineup_cursor + 1)
+        elif event.key in (pygame.K_q, pygame.K_e):
+            # Cambiar equipo directamente desde la vista de alineación
+            step = -1 if event.key == pygame.K_q else 1
+            if self.lineup_dirty:
+                team = self._current_team()
+                self.modal_state = {
+                    "type": "lineup",
+                    "roster": list(self.lineup_roster),
+                    "team": team
+                }
+            else:
+                self.team_idx = (self.team_idx + step) % len(self.teams)
+                self._load_lineup()
         elif event.key == pygame.K_RETURN:
             if self.lineup_selected is None:
                 self.lineup_selected = self.lineup_cursor
             else:
-                # SWAP
+                # Intercambiar posiciones
                 a, b = self.lineup_selected, self.lineup_cursor
                 roster[a], roster[b] = roster[b], roster[a]
                 self.lineup_selected = None
-                # Save
-                team = self._current_team()
-                team["roster"] = roster
-                # Also save indices
-                save_team_config(team["short"], {
-                    "lineup_order": [p["name"] for p in roster],
-                    **self._get_existing_config(team["short"])
-                })
+                self.lineup_dirty = True
+        elif event.key in (pygame.K_f, pygame.K_SPACE):
+            # Tecla explícita para guardar y pedir confirmación del 11 inicial
+            team = self._current_team()
+            self.modal_state = {
+                "type": "lineup",
+                "roster": list(self.lineup_roster),
+                "team": team
+            }
         elif event.key == pygame.K_ESCAPE:
-            self.mode = self.MODE_MENU
+            if self.lineup_dirty:
+                team = self._current_team()
+                self.modal_state = {
+                    "type": "lineup",
+                    "roster": list(self.lineup_roster),
+                    "team": team
+                }
+            else:
+                self.mode = self.MODE_MENU
 
     def _handle_create(self, event):
         if self.create_step == 0:
@@ -336,13 +383,55 @@ class TeamEditorScene:
         self.lineup_roster = list(self._get_full_roster(team))
         self.lineup_cursor = 0
         self.lineup_selected = None
+        self.lineup_dirty = False
 
     def _get_existing_config(self, short):
         ud = load_user_data()
         return ud.get("team_configs", {}).get(short, {})
 
+    def _confirm_modal_action(self):
+        """Ejecuta y persiste la acción confirmada en el modal."""
+        if not self.modal_state: return
+        mtype = self.modal_state.get("type")
+        team = self.modal_state.get("team", self._current_team())
+        
+        if mtype == "formation":
+            new_form = self.modal_state.get("formation", "4-3-3")
+            tc = self._get_existing_config(team["short"])
+            tc["formation"] = new_form
+            save_team_config(team["short"], tc)
+            team["formation"] = new_form
+            self.toast_msg = f"✓ Formación de {team['name']} guardada: {new_form}"
+            self.toast_timer = 3.5
+            
+        elif mtype == "lineup":
+            roster = self.modal_state.get("roster", [])
+            tc = self._get_existing_config(team["short"])
+            tc["lineup_order"] = [p["name"] for p in roster]
+            save_team_config(team["short"], tc)
+            team["roster"] = roster
+            from data.career_manager import career_manager
+            if hasattr(career_manager, "rosters") and team["short"] in career_manager.rosters:
+                career_manager.rosters[team["short"]] = roster
+            self.lineup_dirty = False
+            self.toast_msg = f"✓ Nuevo 11 inicial de {team['name']} guardado con éxito"
+            self.toast_timer = 3.5
+            
+        self.modal_state = None
+
+    def _cancel_modal_action(self):
+        """Cancela la acción del modal."""
+        if self.modal_state and self.modal_state.get("type") == "lineup":
+            self._load_lineup()
+            self.lineup_dirty = False
+        self.modal_state = None
+
     def update(self, dt):
         self.time += dt
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0:
+                self.toast_msg = ""
 
     def draw(self, surface):
         # Background
@@ -361,6 +450,11 @@ class TeamEditorScene:
             self._draw_lineup(surface)
         elif self.mode == self.MODE_CREATE:
             self._draw_create(surface)
+
+        # Overlays
+        self._draw_toast(surface)
+        if self.modal_state:
+            self._draw_confirmation_modal(surface)
 
     # ═══════════════════════════════════════════
     # MENU
@@ -460,11 +554,11 @@ class TeamEditorScene:
 
         # Save hint
         saved_form = self._get_existing_config(team["short"]).get("formation", "4-3-3")
-        status = "[OK] Guardada" if formation == saved_form else "ENTER para guardar"
-        ss = self.font_text.render(status, True, (0, 200, 100) if "[OK]" in status else UI_TEXT_DIM)
+        status = "[OK] Guardada" if formation == saved_form else "ENTER para Confirmar y Guardar"
+        ss = self.font_text.render(status, True, (0, 200, 100) if "[OK]" in status else UI_ACCENT)
         surface.blit(ss, (WIDTH//2 - ss.get_width()//2, HEIGHT - 65))
 
-        hint = self.font_hint.render("←→/AD Cambiar  ·  ENTER Guardar  ·  ESC Volver", True, UI_TEXT_DIM)
+        hint = self.font_hint.render("←→/AD Formación  ·  Q/E Cambiar Equipo  ·  ENTER Guardar  ·  ESC Volver", True, UI_TEXT_DIM)
         surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT - 30))
 
     # ═══════════════════════════════════════════
@@ -558,7 +652,10 @@ class TeamEditorScene:
                 surface.blit(vs, (cx, y + 1))
                 cx += 50
 
-        hint = self.font_hint.render("↑↓ Mover  ·  ENTER Seleccionar/Intercambiar  ·  ESC Volver", True, UI_TEXT_DIM)
+        hint_str = "↑↓ Mover  ·  ENTER Seleccionar/Intercambiar  ·  ESPACIO/F Guardar 11 Inicial  ·  Q/E Cambiar Equipo  ·  ESC Volver"
+        if self.lineup_dirty:
+            hint_str = "● CAMBIOS PENDIENTES  ·  ESPACIO/F Guardar y Confirmar  ·  ESC Volver/Descartar"
+        hint = self.font_hint.render(hint_str, True, UI_ACCENT if self.lineup_dirty else UI_TEXT_DIM)
         surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT - 30))
 
     # ═══════════════════════════════════════════
@@ -724,3 +821,107 @@ class TeamEditorScene:
         if pos in ["CB", "LB", "RB", "LWB", "RWB"]: return (50, 150, 250)
         if pos in ["CDM", "CM", "CAM", "LM", "RM"]: return (50, 200, 100)
         return (250, 80, 80)
+
+    # ═══════════════════════════════════════════
+    # OVERLAYS: CONFIRMATION MODAL & TOAST
+    # ═══════════════════════════════════════════
+    def _draw_confirmation_modal(self, surface):
+        """Dibuja una ventana modal elegante solicitando confirmación del usuario."""
+        if not self.modal_state: return
+
+        # Fondo traslúcido
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((8, 10, 20, 210))
+        surface.blit(overlay, (0, 0))
+
+        # Cuadro modal
+        box_w, box_h = 580, 360
+        box = pygame.Rect(WIDTH//2 - box_w//2, HEIGHT//2 - box_h//2, box_w, box_h)
+        pygame.draw.rect(surface, (22, 26, 42), box, border_radius=16)
+
+        # Borde brillante
+        pulse = (math.sin(self.time * 4) + 1) / 2
+        glow_color = (int(40 + pulse * 40), int(190 + pulse * 65), int(150 + pulse * 65))
+        pygame.draw.rect(surface, glow_color, box, 2, border_radius=16)
+
+        # Encabezado
+        title = self.font_section.render("CONFIRMAR CAMBIOS DE EQUIPO", True, UI_ACCENT)
+        surface.blit(title, (box.left + 25, box.top + 20))
+        pygame.draw.line(surface, UI_ACCENT, (box.left + 25, box.top + 50), (box.right - 25, box.top + 50), 1)
+
+        team = self.modal_state.get("team", self._current_team())
+        from data.teams import draw_badge
+        draw_badge(surface, team, box.left + 45, box.top + 88, size=40)
+
+        tname = self.font_text_bold.render(team["name"], True, WHITE)
+        surface.blit(tname, (box.left + 75, box.top + 78))
+
+        mtype = self.modal_state.get("type")
+        if mtype == "formation":
+            form = self.modal_state.get("formation", "4-3-3")
+            msg1 = self.font_text.render("¿Deseas guardar esta formación como la PREDETERMINADA?", True, WHITE)
+            surface.blit(msg1, (box.left + 25, box.top + 125))
+
+            # Fila destacada de formación
+            fbox = pygame.Rect(box.left + 25, box.top + 160, box_w - 50, 75)
+            pygame.draw.rect(surface, (32, 38, 58), fbox, border_radius=10)
+            pygame.draw.rect(surface, UI_ACCENT, fbox, 1, border_radius=10)
+
+            flbl = self.font_hint.render("NUEVA FORMACIÓN TÁCTICA:", True, UI_TEXT_DIM)
+            surface.blit(flbl, (fbox.left + 15, fbox.top + 12))
+            fval = self.font_big.render(form, True, GOLD)
+            surface.blit(fval, (fbox.left + 15, fbox.top + 28))
+
+        elif mtype == "lineup":
+            msg1 = self.font_text.render("¿Deseas confirmar y guardar los cambios en los 11 TITULARES?", True, WHITE)
+            surface.blit(msg1, (box.left + 25, box.top + 120))
+
+            # Cuadro resumen de titulares
+            roster = self.modal_state.get("roster", [])
+            starters = roster[:11]
+
+            sbox = pygame.Rect(box.left + 25, box.top + 148, box_w - 50, 130)
+            pygame.draw.rect(surface, (30, 35, 52), sbox, border_radius=8)
+            pygame.draw.rect(surface, (60, 70, 95), sbox, 1, border_radius=8)
+
+            slbl = self.font_hint.render("NUEVOS 11 TITULARES SELECCIONADOS:", True, UI_ACCENT)
+            surface.blit(slbl, (sbox.left + 10, sbox.top + 6))
+
+            # 2 columnas de titulares
+            for i, p in enumerate(starters):
+                col = 0 if i < 6 else 1
+                row = i if i < 6 else i - 6
+                px = sbox.left + 12 + col * 260
+                py = sbox.top + 25 + row * 16
+                pname = p.get("name", "")[:18]
+                ppos = p.get("pos", "?")
+                povr = p.get("ovr", 75)
+                st_text = f"{i+1:2d}. [{ppos:3s}] {pname}  ({povr})"
+                st_surf = self.font_hint.render(st_text, True, WHITE)
+                surface.blit(st_surf, (px, py))
+
+        # Botones de pie
+        btn_y = box.bottom - 48
+        pygame.draw.line(surface, (50, 55, 75), (box.left + 20, btn_y - 10), (box.right - 20, btn_y - 10), 1)
+
+        btn_confirm = self.font_text_bold.render("[ ENTER ]  Confirmar y Guardar", True, (0, 230, 130))
+        btn_cancel = self.font_text_bold.render("[ ESC ]  Cancelar", True, (240, 90, 90))
+
+        surface.blit(btn_confirm, (box.left + 35, btn_y))
+        surface.blit(btn_cancel, (box.right - 35 - btn_cancel.get_width(), btn_y))
+
+    def _draw_toast(self, surface):
+        """Notificación rápida emergente al guardar cambios."""
+        if self.toast_timer <= 0 or not self.toast_msg: return
+
+        alpha = min(255, int(self.toast_timer * 200))
+        toast_w, toast_h = 520, 42
+        rect = pygame.Rect(WIDTH//2 - toast_w//2, 18, toast_w, toast_h)
+
+        tsurf = pygame.Surface((toast_w, toast_h), pygame.SRCALPHA)
+        tsurf.fill((16, 40, 28, min(230, alpha)))
+        pygame.draw.rect(tsurf, (0, 220, 120, alpha), (0, 0, toast_w, toast_h), 2, border_radius=10)
+
+        msg_s = self.font_text_bold.render(self.toast_msg, True, (255, 255, 255))
+        tsurf.blit(msg_s, (toast_w//2 - msg_s.get_width()//2, toast_h//2 - msg_s.get_height()//2))
+        surface.blit(tsurf, rect)
