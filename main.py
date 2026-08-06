@@ -14,7 +14,7 @@ else:
 
 
 def run_game(screen):
-    from settings import WIDTH, HEIGHT, FPS
+    from settings import WIDTH, HEIGHT, FPS, GAME_TITLE
     from scene_manager import SceneManager
     from scenes.loading import LoadingScene
     from scenes.login import LoginScene
@@ -27,7 +27,7 @@ def run_game(screen):
         from systems.touch_manager import touch_manager
         touch_manager.enabled = True
         
-    pygame.display.set_caption("Futbol Game Ultimate")
+    pygame.display.set_caption(GAME_TITLE)
     clock = pygame.time.Clock()
     
     from systems.audio_manager import audio_manager

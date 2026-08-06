@@ -1,5 +1,5 @@
 @echo off
-title Detener Servidor - Neo Futbol Arcade
+title Detener Servidor - Ultima FC 27
 echo ==============================================
 echo   Deteniendo Servidor y Tunel SSH...
 echo ==============================================

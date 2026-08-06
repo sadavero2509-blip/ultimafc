@@ -1,6 +1,7 @@
 import pygame
 
-# Versión del Juego
+# Versión y Nombre del Juego
+GAME_TITLE = "Ultima FC 27"
 GAME_VERSION = "1.1.0"
 UPDATE_TYPE = "minor"  # "minor" para parches/actualización en vivo, "major" para instalación obligatoria
 
