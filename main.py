@@ -28,6 +28,19 @@ def run_game(screen):
         touch_manager.enabled = True
         
     pygame.display.set_caption(GAME_TITLE)
+    
+    # Cargar y aplicar icono de ventana
+    try:
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icon.png")
+        if getattr(sys, 'frozen', False):
+            # En modo PyInstaller, buscar en _MEIPASS o junto al .exe
+            base = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+            icon_path = os.path.join(base, "assets", "icon.png")
+        if os.path.exists(icon_path):
+            icon_surface = pygame.image.load(icon_path)
+            pygame.display.set_icon(icon_surface)
+    except Exception:
+        pass  # Si falla la carga del icono, continuar sin él
     clock = pygame.time.Clock()
     
     from systems.audio_manager import audio_manager
