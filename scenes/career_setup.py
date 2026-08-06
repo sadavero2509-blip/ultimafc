@@ -106,8 +106,8 @@ class CareerSetupScene:
                 else:
                     self.step = 1
         elif event.key == pygame.K_ESCAPE:
-            from scenes.mode_select import ModeSelectScene
-            self.manager.set_scene(ModeSelectScene)
+            from scenes.main_menu import MainMenuScene
+            self.manager.set_scene(MainMenuScene, context={"skip_splash": True})
 
     # --- Nacionalidad (nuevo paso) ---
     COUNTRIES = [

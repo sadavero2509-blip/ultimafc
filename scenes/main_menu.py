@@ -72,10 +72,14 @@ class MainMenuScene(BaseScene):
     STATE_SPLASH = "splash"
     STATE_HUB = "hub"
 
-    def __init__(self, manager):
+    def __init__(self, manager, context=None):
         super().__init__(manager)
+        self.context = context or {}
         self.time = 0
-        self.state = self.STATE_SPLASH
+        if self.context.get("skip_splash") or self.context.get("start_hub"):
+            self.state = self.STATE_HUB
+        else:
+            self.state = self.STATE_SPLASH
         
         # Tarjetas de Modos (Estilo EA SPORTS FC Carousel)
         self.selected_card = 0

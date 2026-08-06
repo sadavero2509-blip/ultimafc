@@ -76,8 +76,8 @@ class LeagueSelectScene:
                         from scenes.tournament_type_select import TournamentTypeSelectScene
                         self.manager.set_scene(TournamentTypeSelectScene, context=self.context)
                     else:
-                        from scenes.mode_select import ModeSelectScene
-                        self.manager.set_scene(ModeSelectScene, context=self.context)
+                        from scenes.main_menu import MainMenuScene
+                        self.manager.set_scene(MainMenuScene, context={"skip_splash": True})
 
     def _set_selected(self, val):
         self.selected_idx = val % len(self.leagues)

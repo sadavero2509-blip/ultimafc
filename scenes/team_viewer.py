@@ -74,8 +74,8 @@ class TeamViewerScene:
                     editor_ctx["team_idx"] = self.team_idx
                     self.manager.set_scene(TeamEditorScene, context=editor_ctx)
                 elif event.key == pygame.K_ESCAPE:
-                    from scenes.league_select import LeagueSelectScene
-                    self.manager.set_scene(LeagueSelectScene, context=self.context)
+                    from scenes.main_menu import MainMenuScene
+                    self.manager.set_scene(MainMenuScene, context={"skip_splash": True})
 
     def update(self, dt):
         self.time += dt

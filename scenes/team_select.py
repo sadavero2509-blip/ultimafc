@@ -129,8 +129,8 @@ class TeamSelectScene(BaseScene):
                             self.active_side = "left"
                             self.confirmed_player = False
                     else:
-                        from scenes.league_select import LeagueSelectScene
-                        self.manager.set_scene(LeagueSelectScene, context=self.context)
+                        from scenes.main_menu import MainMenuScene
+                        self.manager.set_scene(MainMenuScene, context={"skip_splash": True})
                         return
 
                 sel = self._current_selection()
