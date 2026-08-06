@@ -58,26 +58,67 @@ class NetworkManager:
 
     def _check_url_and_fallback(self):
         """Verifica conexión al servidor remoto/público.
-        Si la conexión es exitosa, marca is_remote_server=True (siempre que no sea localhost).
-        No realiza fallback a localhost si el servidor real no está disponible."""
+        Si la conexión falla, intenta fallback al servidor local en 127.0.0.1:25565.
+        Si el servidor local tampoco está corriendo, lo inicia automáticamente."""
         if not requests:
             self.is_remote_server = False
             return
         
+        # 1. Probar URL configurada en server_config.json
         try:
             res = requests.get(self.server_url, timeout=2.5)
             if res.status_code == 200:
-                if "localhost" in self.server_ip or "127.0.0.1" in self.server_ip:
-                    print(f"[NET] Conexión local detectada en '{self.server_url}' (no cuenta como servidor remoto real).")
-                    self.is_remote_server = False
-                else:
-                    print(f"[NET] Servidor REMOTO detectado en '{self.server_url}'. Modos online disponibles.")
-                    self.is_remote_server = True
+                is_local = "localhost" in self.server_ip or "127.0.0.1" in self.server_ip
+                self.is_remote_server = not is_local
+                print(f"[NET] Servidor detectado en '{self.server_url}' (remoto={self.is_remote_server})")
                 return
         except Exception as e:
-            print(f"[NET] Servidor remoto '{self.server_url}' no alcanzable: {e}")
+            print(f"[NET] Servidor en '{self.server_url}' no alcanzable: {e}")
         
+        # 2. Fallback a servidor local en 127.0.0.1:25565
+        local_url = "http://127.0.0.1:25565"
+        if self.server_url != local_url:
+            try:
+                res = requests.get(local_url, timeout=1.5)
+                if res.status_code == 200:
+                    print(f"[NET] Fallback exitoso a Servidor Local en '{local_url}'")
+                    self.server_url = local_url
+                    self.server_ip = "127.0.0.1"
+                    self.server_port = 25565
+                    self.is_remote_server = False
+                    return
+            except Exception:
+                pass
+
+        # 3. Intentar arrancar servidor local si no hay otro disponible
+        try:
+            import server_manager
+            if not server_manager.is_server_running():
+                print("[NET] Lanzando servidor local de respaldo...")
+                server_manager.start_server()
+                import time as _t
+                _t.sleep(1.0)
+                res = requests.get(local_url, timeout=2.0)
+                if res.status_code == 200:
+                    self.server_url = local_url
+                    self.server_ip = "127.0.0.1"
+                    self.server_port = 25565
+                    self.is_remote_server = False
+                    print(f"[NET] Servidor local iniciado correctamente en '{local_url}'")
+                    return
+        except Exception as ex:
+            print(f"[NET] Error intentando iniciar servidor local: {ex}")
+
         self.is_remote_server = False
+
+    def is_server_online(self):
+        """Comprueba si el servidor HTTP responde correctamente."""
+        if not requests: return False
+        try:
+            res = requests.get(self.server_url, timeout=1.5)
+            return res.status_code == 200
+        except Exception:
+            return False
 
     def refresh_config(self):
         """Vuelve a leer la IP del servidor desde el archivo de configuración."""
@@ -158,12 +199,13 @@ class NetworkManager:
             for url in urls_to_try:
                 try:
                     # Recrear el cliente SIO para evitar estado corrupto de intentos previos
-                    self.sio = socketio.Client()
+                    self.sio = socketio.Client(reconnection=True, engineio_logger=False)
                     self.setup_handlers()
-                    self.sio.connect(url, wait_timeout=3)
+                    self.sio.connect(url, transports=['polling', 'websocket'], wait_timeout=5)
                     self.server_url = url  # Recordar la URL que funcionó
                     print(f"[NET] SocketIO conectado a {url}")
-                    self.sio.emit('login', {"username": self.username})
+                    if self.username:
+                        self.sio.emit('login', {"username": self.username})
                     self.sio.wait()
                     return
                 except Exception as e:

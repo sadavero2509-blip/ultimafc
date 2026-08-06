@@ -75,46 +75,44 @@ class LoadingScene(MenuScene):
         
         if not self.server_ready:
             elapsed = time.time() - self.start_time
-            if elapsed > self.timeout:
+            # Comprobar si el servidor responde (vía SocketIO o API HTTP)
+            server_online = nm.connected or nm.is_server_online()
+            if server_online:
+                # Verificar Versión
+                try:
+                    import requests
+                    from settings import GAME_VERSION
+                    r = requests.get(nm.server_url, timeout=1.5)
+                    if r.status_code == 200:
+                        try:
+                            res_data = r.json()
+                        except (ValueError, Exception):
+                            res_data = {}
+                        srv_ver = res_data.get("version", "0.0.0")
+                        srv_update_type = res_data.get("update_type", "minor")
+                        
+                        if srv_ver != GAME_VERSION and srv_update_type == "major":
+                            self.major_update_needed = True
+                            self.major_update_ver = srv_ver
+                            self.status = f"Versión obligatoria requerida: v{srv_ver}"
+                            return
+                        elif srv_ver != GAME_VERSION:
+                            self.status = f"Jugando con parches en vivo (v{srv_ver})"
+                        else:
+                            self.status = "¡Conexión establecida y validada!"
+                    else:
+                        self.status = "¡Conexión establecida!"
+                except Exception:
+                    self.status = "¡Conexión establecida!"
+                    
+                self.server_ready = True
+                self.can_continue = True
+            elif elapsed > self.timeout:
                 self.status = "Servidor no detectado (Modo Offline)"
                 self.server_ready = True
                 self.can_continue = True
             else:
-                # Comprobar si NetworkManager ya está conectado
-                if nm.connected:
-                    # Verificar Versión
-                    try:
-                        import requests
-                        from settings import GAME_VERSION
-                        # Usar la URL del servidor directamente
-                        r = requests.get(nm.server_url, timeout=1)
-                        if r.status_code == 200:
-                            try:
-                                res_data = r.json()
-                            except (ValueError, Exception):
-                                res_data = {}
-                            srv_ver = res_data.get("version", "0.0.0")
-                            srv_update_type = res_data.get("update_type", "minor")
-                            
-                            # Si es una actualización mayor, bloquear aquí también por seguridad
-                            if srv_ver != GAME_VERSION and srv_update_type == "major":
-                                self.major_update_needed = True
-                                self.major_update_ver = srv_ver
-                                self.status = f"Versión obligatoria requerida: v{srv_ver}"
-                                return
-                            elif srv_ver != GAME_VERSION:
-                                self.status = f"Jugando con parches en vivo (v{srv_ver})"
-                            else:
-                                self.status = "¡Conexión establecida y validada!"
-                        else:
-                            self.status = "¡Conexión establecida!"
-                    except:
-                        self.status = "¡Conexión establecida!"
-                        
-                    self.server_ready = True
-                    self.can_continue = True
-                else:
-                    self.status = f"Conectando al servidor central{self.dots}"
+                self.status = f"Conectando al servidor central{self.dots}"
 
     def draw(self, screen):
         screen.fill((10, 15, 25))
