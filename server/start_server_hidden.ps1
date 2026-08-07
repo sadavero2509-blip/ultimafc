@@ -104,7 +104,7 @@ while ($true) {
         $SshArgs += "-o"
         $SshArgs += "ExitOnForwardFailure=yes"
         $SshArgs += "-R"
-        $SshArgs += "neofutbol-sadav:80:127.0.0.1:25565"
+        $SshArgs += "ultimafc-sadav:80:127.0.0.1:25565"
         $SshArgs += "serveo.net"
 
         try {

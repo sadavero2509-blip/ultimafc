@@ -5,13 +5,15 @@ cd /d "%~dp0"
 taskkill /f /im python.exe >nul 2>&1
 taskkill /f /im ssh.exe >nul 2>&1
 
+if not exist "server_data" mkdir "server_data"
+
 :: 1. Iniciar servidor python
 start /b .venv\Scripts\python.exe server\app.py > server.log 2>&1
 
-:: Esperar a que levante usando ping (no interactivo y compatible)
+:: Esperar a que levante el servidor Flask usando ping
 ping 127.0.0.1 -n 3 >nul
 
-:: 2. Configuracion de clave SSH
+:: 2. Configuracion de clave SSH si existe
 set SSH_KEY_OPT=
 if exist "%USERPROFILE%\FutbolGame" (
     set SSH_KEY_OPT=-i "%USERPROFILE%\FutbolGame"
@@ -30,15 +32,19 @@ if errorlevel 1 (
     ping 127.0.0.1 -n 3 >nul
 )
 
-:: Iniciar tunel SSH
+:: Iniciar tunel SSH con Serveo
 echo [%date% %time%] Iniciando tunel SSH... >> server_data\server_log.txt
-start /b ssh %SSH_KEY_OPT% -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes -R neofutbol-sadav:80:127.0.0.1:25565 serveo.net > tunnel.log 2>&1
+start /b ssh %SSH_KEY_OPT% -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes -R ultimafc-sadav:80:127.0.0.1:25565 serveo.net > tunnel.log 2>&1
 
 :: Esperar a que el tunel se establezca
 ping 127.0.0.1 -n 7 >nul
 
 :: 3. Ejecutar auto-configurador para enlazar la URL al cliente
-.venv\Scripts\python.exe scratch\update_tunnel_url.py
+if exist ".venv\Scripts\python.exe" (
+    .venv\Scripts\python.exe scratch\update_tunnel_url.py
+) else (
+    python scratch\update_tunnel_url.py
+)
 echo [%date% %time%] URL actualizada. >> server_data\server_log.txt
 
 :: Esperar a que el tunel SSH termine (si se cae, el loop lo reinicia)
